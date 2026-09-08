@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>블리비 중국사업 9월 일정표</title>
+<style>
+  :root{
+    --ink:#27313d; --muted:#6f7a86; --line:#c7cdd4;
+    --blue:#c9d6e8; --blue2:#d9e2f3; --blue3:#eef3f9;
+    --field:#e7e6e6; --note:#faf8f2; --paper:#ffffff; --bg:#f5f7fa;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+  aside{background:#fff;border-right:1px solid var(--line);padding:24px 18px;position:sticky;top:0;height:100vh}
+  .brand{font-size:18px;font-weight:800;margin:4px 8px 24px}
+  .brand small{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:6px}
+  nav button{width:100%;border:0;background:transparent;text-align:left;padding:12px 14px;border-radius:10px;margin:3px 0;font-size:14px;color:var(--ink);cursor:pointer}
+  nav button:hover{background:#f3f5f8}
+  nav button.active{background:var(--blue2);font-weight:700}
+  .print-btn{margin-top:18px;width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  main{padding:28px 32px 60px;max-width:1650px;width:100%;margin:0 auto}
+  .hero{background:var(--blue);border:1px solid #b7c6d8;border-radius:14px;padding:24px 26px;margin-bottom:22px}
+  .hero h1{margin:0;font-size:26px;letter-spacing:-.4px}.hero p{margin:8px 0 0;color:#4d5966;font-size:13px}
+  .section{display:none}.section.active{display:block}
+  .section-title{font-size:18px;font-weight:800;margin:22px 0 12px}
+  .subtle{font-size:12px;color:var(--muted);margin:0 0 14px}
+  .table-wrap{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 13px;vertical-align:top;font-size:13px;line-height:1.55;word-break:keep-all;overflow-wrap:anywhere}
+  th:last-child,td:last-child{border-right:0}tr:last-child td{border-bottom:0}
+  th{background:var(--blue2);font-weight:800;text-align:center}
+  td.field{background:var(--field);font-weight:700}
+  td.note{background:var(--note)}
+  td.schedule{background:#fff}
+  .week-table col.field-col{width:20%}
+  .week-table col.schedule-col{width:55%}
+  .week-table col.note-col{width:25%}
+  .core td:first-child{background:var(--field);font-weight:700;width:18%}.core td:nth-child(2){width:52%}.core td:nth-child(3){background:var(--note);width:30%}
+  .weekbar{display:flex;align-items:center;justify-content:space-between;background:var(--blue2);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;padding:12px 16px;font-weight:800}
+  .weekbar small{font-weight:500;color:var(--muted)}
+  .week .table-wrap{border-radius:0 0 12px 12px}
+  .bullet{white-space:pre-line}
+  .empty{color:#a2a8ae}
+  footer{margin-top:22px;font-size:11px;color:#8a939d;text-align:right}
+  @media(max-width:900px){
+    .app{display:block}aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:14px}
+    .brand{margin:2px 4px 10px}.brand small{display:inline;margin-left:7px}
+    nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}nav button{white-space:nowrap;width:auto;margin:0;padding:9px 12px}.print-btn{display:none}
+    main{padding:16px}.hero{padding:18px}.hero h1{font-size:21px}
+    .table-wrap{border:0;background:transparent;overflow:visible}
+    table,thead,tbody,tr,th,td{display:block;width:100%!important}
+    thead{display:none}
+    tr{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden}
+    td{border-right:0!important;border-bottom:1px solid var(--line);padding:10px 12px}
+    td:last-child{border-bottom:0}
+    td::before{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px}
+    .week-table td:nth-child(1)::before{content:"분야"}
+    .week-table td:nth-child(2)::before{content:"일정"}
+    .week-table td:nth-child(3)::before{content:"비고"}
+    .core td:nth-child(1)::before{content:"분야"}.core td:nth-child(2)::before{content:"9월 목표"}.core td:nth-child(3)::before{content:"비고"}
+  }
+  @media print{
+    body{background:#fff}.app{display:block}aside{display:none}main{padding:0;max-width:none}.hero{border-radius:0;margin:0 0 12px}
+    .section{display:block!important;page-break-after:always}.section:last-of-type{page-break-after:auto}
+    .table-wrap,.weekbar{border-radius:0}th,td{font-size:9pt;padding:7px 8px}.section-title{margin-top:8px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">블리비 중국사업<small>9월 일정표</small></div>
+    <nav>
+      <button class="active" data-target="core">9월 핵심 추진 목표</button>
+      <button data-target="w2">2주차 · 9/7~13</button>
+      <button data-target="w3">3주차 · 9/14~20</button>
+      <button data-target="w4">4주차 · 9/21~27</button>
+    </nav>
+    <button class="print-btn" onclick="window.print()">인쇄 / PDF 저장</button>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <h1>9월 일정표</h1>
+      <p>핵심 목표와 주차별 상세 실행 일정을 한 화면에서 확인합니다.</p>
+    </div>
+
+    <section id="core" class="section active">
+      <div class="section-title">9월 핵심 추진 목표</div>
+      <p class="subtle">분야별 9월 목표와 현재 비고를 요약한 핵심 일정입니다.</p>
+      <div class="table-wrap">
+        <table class="core">
+          <thead><tr><th>분야</th><th>9월 목표</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td>① 법인·인허가</td><td>법인 설립 및 계좌 개설, 1호점 인허가 절차 진행</td><td>9/20 중국 법인 설립 예정</td></tr>
+            <tr><td>② 인테리어 착공</td><td>설계안 확정 → 공사 착공 및 진행</td><td>도면 수정 중</td></tr>
+            <tr><td>③ 정식 파트별 채용 </td><td>파트별 채용 진행 → 주요 포지션 확정</td><td>채용공고 내용 전달 요청 완</td></tr>
+            <tr><td>④ 장비·약품 및 CRM</td><td>업체·품목 확정 → 계약·발주</td><td>양측 팀 진행 중</td></tr>
+            <tr><td>⑤ 마케팅 채널</td><td>메이퇀·SNS·위챗 등 주요 채널 개설 및 입점 준비</td><td>법인 설립 후 즉시 진행 준비</td></tr>
+            <tr><td>⑥ SOP·법무문서</td><td>운영 SOP 및 근로계약서·동의서·내부 규정 구축 완료</td><td>계약서 초안 완, 기타 작성중</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="w2" class="section week">
+      <div class="section-title">주차별 상세 실행 일정</div>
+      <div class="weekbar"><span>2주차 (9/7~13)</span><small id="w2-count">불러오는 중</small></div>
+      <div class="table-wrap"><table class="week-table"><colgroup><col class="field-col"><col class="schedule-col"><col class="note-col"></colgroup><thead><tr><th>분야</th><th>일정</th><th>비고</th></tr></thead><tbody id="w2-body"></tbody></table></div>
+    </section>
+
+    <section id="w3" class="section week">
+      <div class="section-title">주차별 상세 실행 일정</div>
+      <div class="weekbar"><span>3주차 (9/14~20)</span><small id="w3-count">불러오는 중</small></div>
+      <div class="table-wrap"><table class="week-table"><colgroup><col class="field-col"><col class="schedule-col"><col class="note-col"></colgroup><thead><tr><th>분야</th><th>일정</th><th>비고</th></tr></thead><tbody id="w3-body"></tbody></table></div>
+    </section>
+
+    <section id="w4" class="section week">
+      <div class="section-title">주차별 상세 실행 일정</div>
+      <div class="weekbar"><span>4주차 (9/21~27)</span><small id="w4-count">불러오는 중</small></div>
+      <div class="table-wrap"><table class="week-table"><colgroup><col class="field-col"><col class="schedule-col"><col class="note-col"></colgroup><thead><tr><th>분야</th><th>일정</th><th>비고</th></tr></thead><tbody id="w4-body"></tbody></table></div>
+    </section>
+
+    <footer>Google Sheets와 연동된 실시간 일정표</footer>
+  </main>
+</div>
+<script>
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyUdBAku0GYKoFFgm_0FLB7GgRj7mV8S_rvCBOG5MJkGAkqXRgYNJRIXBhWfIiuOZlA/exec';
+
+  const buttons=[...document.querySelectorAll('nav button')];
+  const sections=[...document.querySelectorAll('.section')];
+  buttons.forEach(btn=>btn.addEventListener('click',()=>{
+    buttons.forEach(b=>b.classList.remove('active'));
+    sections.forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.target).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }));
+
+  function esc(s=''){
+    return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  }
+  function formatText(s=''){
+    s=String(s).trim();
+    if(!s) return '';
+    return s.split(/\s*\/\s*/).filter(Boolean).map(x=>'• '+esc(x.trim())).join('<br>');
+  }
+  function buildWeek(week, bodyId, countId){
+    const list=window.scheduleRows.filter(r=>r.week===week);
+    document.getElementById(countId).textContent=`${list.length}개 분야`;
+    const html=list.map(r=>`<tr>
+      <td class="field">${esc(r.field)}</td>
+      <td class="schedule bullet">${formatText(r.schedule)}</td>
+      <td class="note bullet">${formatText(r.note)}</td>
+    </tr>`).join('');
+    document.getElementById(bodyId).innerHTML=html || '<tr><td colspan="3" class="empty">일정이 없습니다.</td></tr>';
+  }
+
+  function showLoadError(e){
+    ['w2','w3','w4'].forEach(w=>{
+      document.getElementById(w+'-body').innerHTML='<tr><td colspan="3" class="empty">구글시트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</td></tr>';
+      document.getElementById(w+'-count').textContent='연결 오류';
+    });
+    console.error(e);
+  }
+
+  function handleSheetData(rows){
+    try{
+      if(!Array.isArray(rows)) throw new Error('일정 데이터 형식 오류');
+
+      window.scheduleRows = rows.map(r=>({
+        week:String(r.week || '').trim(),
+        field:String(r.field || '').trim(),
+        schedule:String(r.schedule || '').trim(),
+        note:String(r.note || '').trim()
+      })).filter(r=>r.week && r.field && r.week !== '주차');
+
+      buildWeek('2주차','w2-body','w2-count');
+      buildWeek('3주차','w3-body','w3-count');
+      buildWeek('4주차','w4-body','w4-count');
+    }catch(e){
+      showLoadError(e);
+    }
+  }
+
+  async function loadSchedule(){
+    try{
+      const response = await fetch(`${WEB_APP_URL}?cacheBust=${Date.now()}`, { cache:'no-store' });
+      if(!response.ok) throw new Error(`HTTP ${response.status}`);
+      const rows = await response.json();
+      handleSheetData(rows);
+    }catch(e){
+      showLoadError(e);
+    }
+  }
+
+  loadSchedule();
+</script>
+</body>
+</html>
