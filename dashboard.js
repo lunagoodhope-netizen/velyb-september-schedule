@@ -20,16 +20,22 @@ function collaborationView(data){
  const indices=headers.map(h=>data.headers.findIndex(v=>v.trim()===h));
  if(indices.some(i=>i<0))return '<div class="panel">협업요청 시트 첫 행을 확인해 주세요: '+headers.join(' / ')+'</div>';
  const records=data.rows.map(r=>indices.map(i=>String(r[i]??'').trim())).filter(r=>checked(r[5]));
+ const typeIndex=data.headers.findIndex(h=>h.trim()==='구분');
+ const typed=data.rows.filter(r=>checked(r[indices[5]])).map(r=>({values:indices.map(i=>String(r[i]??'').trim()),kind:typeIndex<0?'상세 요청':String(r[typeIndex]||'상세 요청').trim()}));
  collaborationCategories=[...new Set(records.map(r=>r[0]||'기타'))];
  if(collaborationCategory!==null&&!collaborationCategories.includes(collaborationCategory))collaborationCategory=null;
  const all=collaborationCategory===null;
- const filtered=records.filter(r=>r[1]&&(all||(r[0]||'기타')===collaborationCategory));
+ const scopeRows=typed.filter(r=>r.kind==='지원 범위'&&r.values[1]);
+ const scopeHTML=list=>list.map(({values:r})=>'<div style="padding:12px 0;border-bottom:1px solid var(--line)"><p style="margin:0">'+(checked(r[4])?'<s>':'')+esc(r[1])+(checked(r[4])?'</s> <span>완료</span>':'')+'</p><p class="subtle">'+esc(r[2]||'담당자 미정')+(r[3]?' · '+esc(r[3]):'')+'</p>'+(r[6]?'<p class="subtle">'+esc(r[6])+'</p>':'')+'</div>').join('');
+ if(all)return '<p class="subtle">분야별 지원 범위를 확인하고, 분야를 눌러 상세 요청을 확인하세요.</p><div class="grid">'+collaborationCategories.map((name,i)=>{const scopes=scopeRows.filter(r=>(r.values[0]||'기타')===name);return '<section class="panel"><h2 style="margin-top:0">'+esc(name)+'</h2>'+(scopes.length?scopeHTML(scopes):'<p class="subtle">등록된 지원 범위가 없습니다.</p>')+'<div class="toolbar"><button data-category="'+i+'" aria-label="'+esc(name)+' 상세 요청 보기">상세 요청 보기 →</button></div></section>'}).join('')+'</div>'+(collaborationCategories.length?'':'<div class="panel">표시 중인 협업 분야가 없습니다.</div>');
+ const filtered=typed.filter(r=>r.kind!=='지원 범위'&&r.values[1]&&(r.values[0]||'기타')===collaborationCategory).map(r=>r.values);
  const due=r=>{const value=r[3].replace(/\./g,'-').replace(/\//g,'-').replace(/\s/g,'').replace(/-$/,'');const match=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);if(!match)return Infinity;const iso=match[1]+'-'+match[2].padStart(2,'0')+'-'+match[3].padStart(2,'0');return dateNumber(iso)??Infinity};
  filtered.sort((a,b)=>{const x=due(a),y=due(b);return x===y?0:x-y});
- const tabs='<div class="tabs" aria-label="협업 분야"><button data-category="all" aria-pressed="'+all+'">전체</button>'+collaborationCategories.map((c,i)=>'<button data-category="'+i+'" aria-pressed="'+(c===collaborationCategory)+'">'+esc(c)+'</button>').join('')+'</div>';
+ const tabs='<div class="tabs" aria-label="협업 분야"><button data-category="all">← 지원 범위 전체</button>'+collaborationCategories.map((c,i)=>'<button data-category="'+i+'" aria-pressed="'+(c===collaborationCategory)+'">'+esc(c)+'</button>').join('')+'</div>';
  const columns=all?['협업 구분','요청사항','담당자','요청 일정','완료','비고']:['요청사항','담당자','요청 일정','완료','비고'];
  const body=filtered.map(r=>{const done=checked(r[4]);const cells=[(done?'<s>':'')+esc(r[1])+(done?'</s>':''),esc(r[2]||'—'),esc(r[3]||'미정'),done?'☑ 완료':'☐',esc(r[6])];if(all)cells.unshift(esc(r[0]||'기타'));return '<tr>'+cells.map(v=>'<td>'+v+'</td>').join('')+'</tr>'}).join('');
- return '<p class="subtle">관련 분야를 선택해 요청사항을 확인하세요. 요청 일정은 날짜 또는 상시로 표시됩니다.</p>'+tabs+(filtered.length?'<div class="table-wrap"><table><thead><tr>'+columns.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div>':'<div class="panel">표시 중인 요청사항이 없습니다.</div>');
+ const scopes=scopeRows.filter(r=>(r.values[0]||'기타')===collaborationCategory);
+ return tabs+'<h2>'+esc(collaborationCategory)+'</h2>'+(scopes.length?'<details style="margin-bottom:18px"><summary>지원 범위</summary><div class="panel">'+scopeHTML(scopes)+'</div></details>':'')+'<h2>상세 요청</h2>'+(filtered.length?'<div class="table-wrap"><table><thead><tr>'+columns.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div>':'<div class="panel">표시 중인 상세 요청이 없습니다.</div>');
 }
 function taskView(data){
  if(!data)return '<div class="panel">업무 시트를 불러오는 중입니다.</div>';
@@ -69,11 +75,12 @@ async function refresh(){const run=++generation;scheduleState='loading';menuStat
  (async()=>{try{const data=await json(SCHEDULE_URL);if(!Array.isArray(data))throw Error('일정 형식 오류');if(run!==generation)return;rows=data.map(r=>({week:String(r.week||'').trim(),field:String(r.field||'').trim(),schedule:String(r.schedule||''),note:String(r.note||'')})).filter(r=>r.week&&r.field&&r.week!=='주차');scheduleState='ready'}catch{if(run===generation)scheduleState='error'}finally{if(run===generation)render()}})(),
  (async()=>{if(!endpoint)return;try{if(!validURL(endpoint))throw Error('잘못된 주소');const data=await json(endpoint);if(data.error)throw Error(data.error);const next=normalizeMenus(data.menus);if(!data.tables||typeof data.tables!=='object'||Array.isArray(data.tables))throw Error('데이터 형식 오류');for(const t of Object.values(data.tables)){if(!t.error&&(!Array.isArray(t.headers)||!Array.isArray(t.rows)||!t.rows.every(Array.isArray)))throw Error('표 형식 오류')}if(run!==generation)return;menus=next;tables=data.tables;overviewData=data.overview||null;menuState='ready';if(!menus.some(m=>m.sheet===selected))selected=menus[0]?.sheet||''}catch{if(run===generation)menuState='error'}finally{if(run===generation)render()}})()
  ]);}
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.sheet!==undefined){selected=b.dataset.sheet;render()}if(b.dataset.week!==undefined){week=b.dataset.week;render()}});
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.sheet!==undefined){selected=b.dataset.sheet;if(selected==='협업요청')collaborationCategory=null;render()}if(b.dataset.week!==undefined){week=b.dataset.week;render()}});
 document.addEventListener('click',e=>{const b=e.target.closest('button[data-owner]');if(!b)return;taskOwner=b.dataset.owner==='all'?null:taskOwners[Number(b.dataset.owner)];render();document.querySelector('button[data-owner="'+b.dataset.owner+'"]')?.focus()});
 document.addEventListener('click',e=>{const b=e.target.closest('button[data-category]');if(!b)return;collaborationCategory=b.dataset.category==='all'?null:collaborationCategories[Number(b.dataset.category)];render();document.querySelector('button[data-category="'+b.dataset.category+'"]')?.focus()});
 $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint').value=endpoint;
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
+
 
