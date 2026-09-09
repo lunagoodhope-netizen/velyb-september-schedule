@@ -16,8 +16,8 @@ let collaborationCategories=[];
 const checked=value=>value===true||['TRUE','ON'].includes(String(value).trim().toUpperCase());
 function collaborationView(data){
  if(!data)return '<div class="panel">협업 요청을 불러오지 못했습니다. 새로고침을 눌러 주세요.</div>';
- const headers=['협업 구분','요청사항','담당자','요청 일정','완료','표시','비고'];
- const indices=headers.map(h=>data.headers.findIndex(v=>v.trim()===h));
+ const headers=['협업 구분','요청사항','담당자','마감일','완료','표시','비고'];
+ const indices=headers.map(h=>data.headers.findIndex(v=>(v.trim()==='요청 일정'?'마감일':v.trim())===h));
  if(indices.some(i=>i<0))return '<div class="panel">협업요청 시트 첫 행을 확인해 주세요: '+headers.join(' / ')+'</div>';
  const records=data.rows.map(r=>indices.map(i=>String(r[i]??'').trim())).filter(r=>checked(r[5]));
  const typeIndex=data.headers.findIndex(h=>h.trim()==='구분');
@@ -32,7 +32,7 @@ function collaborationView(data){
  const due=r=>{const value=r[3].replace(/\./g,'-').replace(/\//g,'-').replace(/\s/g,'').replace(/-$/,'');const match=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);if(!match)return Infinity;const iso=match[1]+'-'+match[2].padStart(2,'0')+'-'+match[3].padStart(2,'0');return dateNumber(iso)??Infinity};
  filtered.sort((a,b)=>{const x=due(a),y=due(b);return x===y?0:x-y});
  const tabs='<div class="tabs" aria-label="협업 분야"><button data-category="all">← 지원 범위 전체</button>'+collaborationCategories.map((c,i)=>'<button data-category="'+i+'" aria-pressed="'+(c===collaborationCategory)+'">'+esc(c)+'</button>').join('')+'</div>';
- const columns=all?['협업 구분','요청사항','담당자','요청 일정','완료','비고']:['요청사항','담당자','요청 일정','완료','비고'];
+ const columns=all?['협업 구분','요청사항','담당자','마감일','완료','비고']:['요청사항','담당자','마감일','완료','비고'];
  const body=filtered.map(r=>{const done=checked(r[4]);const cells=[(done?'<s>':'')+esc(r[1])+(done?'</s>':''),esc(r[2]||'—'),esc(r[3]||'미정'),done?'☑ 완료':'☐',esc(r[6])];if(all)cells.unshift(esc(r[0]||'기타'));return '<tr>'+cells.map(v=>'<td>'+v+'</td>').join('')+'</tr>'}).join('');
  const scopes=scopeRows.filter(r=>(r.values[0]||'기타')===collaborationCategory);
  return tabs+'<h2>'+esc(collaborationCategory)+'</h2>'+(scopes.length?'<details style="margin-bottom:18px"><summary>지원 범위</summary><div class="panel">'+scopeHTML(scopes)+'</div></details>':'')+'<h2>상세 요청</h2>'+(filtered.length?'<div class="table-wrap"><table><thead><tr>'+columns.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div>':'<div class="panel">표시 중인 상세 요청이 없습니다.</div>');
@@ -82,5 +82,6 @@ $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint')
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
+
 
 
