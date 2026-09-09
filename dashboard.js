@@ -9,6 +9,38 @@ const $=id=>document.getElementById(id);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function savedURL(){try{return localStorage.getItem('velyb-menu-url')||MENU_URL}catch{return MENU_URL}}
 let endpoint=savedURL();
+let taskOwner=null;
+let taskOwners=[];
+let collaborationCategory=null;
+let collaborationCategories=[];
+const checked=value=>value===true||['TRUE','ON'].includes(String(value).trim().toUpperCase());
+function collaborationView(data){
+ if(!data)return '<div class="panel">협업 요청을 불러오지 못했습니다. 새로고침을 눌러 주세요.</div>';
+ const headers=['협업 구분','요청사항','담당자','요청 일정','완료','표시','비고'];
+ const indices=headers.map(h=>data.headers.findIndex(v=>v.trim()===h));
+ if(indices.some(i=>i<0))return '<div class="panel">협업요청 시트 첫 행을 확인해 주세요: '+headers.join(' / ')+'</div>';
+ const records=data.rows.map(r=>indices.map(i=>String(r[i]??'').trim())).filter(r=>checked(r[5]));
+ collaborationCategories=[...new Set(records.map(r=>r[0]||'기타'))];
+ if(collaborationCategory!==null&&!collaborationCategories.includes(collaborationCategory))collaborationCategory=null;
+ const all=collaborationCategory===null;
+ const filtered=records.filter(r=>r[1]&&(all||(r[0]||'기타')===collaborationCategory));
+ const due=r=>{const value=r[3].replace(/\./g,'-').replace(/\//g,'-').replace(/\s/g,'').replace(/-$/,'');const match=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);if(!match)return Infinity;const iso=match[1]+'-'+match[2].padStart(2,'0')+'-'+match[3].padStart(2,'0');return dateNumber(iso)??Infinity};
+ filtered.sort((a,b)=>{const x=due(a),y=due(b);return x===y?0:x-y});
+ const tabs='<div class="tabs" aria-label="협업 분야"><button data-category="all" aria-pressed="'+all+'">전체</button>'+collaborationCategories.map((c,i)=>'<button data-category="'+i+'" aria-pressed="'+(c===collaborationCategory)+'">'+esc(c)+'</button>').join('')+'</div>';
+ const columns=all?['협업 구분','요청사항','담당자','요청 일정','완료','비고']:['요청사항','담당자','요청 일정','완료','비고'];
+ const body=filtered.map(r=>{const done=checked(r[4]);const cells=[(done?'<s>':'')+esc(r[1])+(done?'</s>':''),esc(r[2]||'—'),esc(r[3]||'미정'),done?'☑ 완료':'☐',esc(r[6])];if(all)cells.unshift(esc(r[0]||'기타'));return '<tr>'+cells.map(v=>'<td>'+v+'</td>').join('')+'</tr>'}).join('');
+ return '<p class="subtle">관련 분야를 선택해 요청사항을 확인하세요. 요청 일정은 날짜 또는 상시로 표시됩니다.</p>'+tabs+(filtered.length?'<div class="table-wrap"><table><thead><tr>'+columns.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+body+'</tbody></table></div>':'<div class="panel">표시 중인 요청사항이 없습니다.</div>');
+}
+function taskView(data){
+ if(!data)return '<div class="panel">업무 시트를 불러오는 중입니다.</div>';
+ const ownerCol=data.headers.findIndex(h=>h.trim()==='담당자');
+ if(ownerCol<0)return '<div class="panel">담당자별업무 시트 첫 행에 담당자 / 할 일 / 마감일 / 상태 / 비고를 입력해 주세요.</div>';
+ taskOwners=[...new Set(data.rows.map(r=>String(r[ownerCol]||'').trim()))].sort((a,b)=>a.localeCompare(b,'ko'));
+ if(taskOwner!==null&&!taskOwners.includes(taskOwner))taskOwner=null;
+ const visible=taskOwner===null?data.rows:data.rows.filter(r=>String(r[ownerCol]||'').trim()===taskOwner);
+ const controls='<div class="tabs" aria-label="담당자 선택"><button data-owner="all" aria-pressed="'+(taskOwner===null)+'">전체</button>'+taskOwners.map((name,i)=>'<button data-owner="'+i+'" aria-pressed="'+(taskOwner===name)+'">'+esc(name||'담당자 미지정')+'</button>').join('')+'</div>';
+ return '<p class="subtle">담당자를 선택해 전달받은 업무를 확인하세요. 업무 변경 후 새로고침을 누르면 최신 내용이 표시됩니다.</p>'+controls+'<p class="subtle">'+esc(taskOwner===null?'전체 업무':taskOwner||'담당자 미지정')+' · '+visible.length+'건</p>'+(visible.length?table(data.headers,visible):'<div class="panel">아직 등록된 업무가 없습니다.</div>');
+}
 function validURL(value){return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(value)}
 function normalizeMenus(input){if(!Array.isArray(input))throw Error('메뉴 형식 오류');const seen=new Set();return input.filter(m=>m.visible===true||String(m.visible).toUpperCase()==='TRUE'||String(m.visible).toUpperCase()==='ON').map((m,i)=>{const sheet=String(m.sheet||'').trim(),name=String(m.name||'').trim();if(!sheet||!name||seen.has(sheet))throw Error('메뉴명과 데이터시트를 확인해 주세요. 데이터시트는 중복될 수 없습니다.');seen.add(sheet);return{name,sheet,type:sheet==='overview'||sheet==='schedule'?sheet:'table',order:Number.isFinite(Number(m.order))?Number(m.order):i}}).sort((a,b)=>a.order-b.order)}
 function table(headers,data){return '<div class="table-wrap"><table><thead><tr>'+headers.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+data.map(r=>'<tr>'+headers.map((_,i)=>'<td>'+esc(r[i])+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
@@ -28,6 +60,8 @@ function render(){
  return}
  const data=tables[item.sheet];
  if(data?.error){$('content').innerHTML='<div class="panel error">'+esc(data.error)+'</div>';return}
+ if(item.sheet==='협업요청'){$('content').innerHTML=collaborationView(data);return}
+ if(item.sheet==='담당자별업무'){$('content').innerHTML=taskView(data);return}
  $('content').innerHTML=data?.rows?.length?table(data.headers,data.rows):'<div class="panel"><h2>아직 등록된 내용이 없습니다.</h2><p>'+(menuState==='ready'?'연결된 시트에 업무를 추가한 뒤 새로고침해 주세요.':'메뉴 시트 연결 후 이 분야의 업무를 표시합니다.')+'</p></div>';
 }
 async function json(url){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url+'?cacheBust='+Date.now(),{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('연결 실패');return await response.json()}finally{clearTimeout(timer)}}
@@ -36,6 +70,8 @@ async function refresh(){const run=++generation;scheduleState='loading';menuStat
  (async()=>{if(!endpoint)return;try{if(!validURL(endpoint))throw Error('잘못된 주소');const data=await json(endpoint);if(data.error)throw Error(data.error);const next=normalizeMenus(data.menus);if(!data.tables||typeof data.tables!=='object'||Array.isArray(data.tables))throw Error('데이터 형식 오류');for(const t of Object.values(data.tables)){if(!t.error&&(!Array.isArray(t.headers)||!Array.isArray(t.rows)||!t.rows.every(Array.isArray)))throw Error('표 형식 오류')}if(run!==generation)return;menus=next;tables=data.tables;overviewData=data.overview||null;menuState='ready';if(!menus.some(m=>m.sheet===selected))selected=menus[0]?.sheet||''}catch{if(run===generation)menuState='error'}finally{if(run===generation)render()}})()
  ]);}
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.sheet!==undefined){selected=b.dataset.sheet;render()}if(b.dataset.week!==undefined){week=b.dataset.week;render()}});
+document.addEventListener('click',e=>{const b=e.target.closest('button[data-owner]');if(!b)return;taskOwner=b.dataset.owner==='all'?null:taskOwners[Number(b.dataset.owner)];render();document.querySelector('button[data-owner="'+b.dataset.owner+'"]')?.focus()});
+document.addEventListener('click',e=>{const b=e.target.closest('button[data-category]');if(!b)return;collaborationCategory=b.dataset.category==='all'?null:collaborationCategories[Number(b.dataset.category)];render();document.querySelector('button[data-category="'+b.dataset.category+'"]')?.focus()});
 $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint').value=endpoint;
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
