@@ -86,8 +86,18 @@ document.addEventListener('change',e=>{if(e.target.id!=='inventory-status')retur
 
 function goalView(){return '<h2>9월 핵심 추진 목표</h2><p class="subtle">기존 대시보드에 저장된 목표입니다. 이 요약은 아직 시트와 연동되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)}
 function render(){
- $('menu').innerHTML=menus.map(m=>'<button data-sheet="'+esc(m.sheet)+'" '+(m.sheet===selected?'aria-current="page"':'')+'>'+esc(m.name)+'</button>').join('');
- const item=menus.find(m=>m.sheet===selected);$('title').textContent=item?.name||'메뉴 없음';
+ const inventorySheets=['약물리스트','장비리스트'];
+ const inventoryMenus=inventorySheets.map(sheet=>menus.find(m=>m.sheet===sheet)).filter(Boolean);
+ const inInventory=inventorySheets.includes(selected);
+ let groupShown=false;
+ const navigation=menus.flatMap(m=>{
+  if(!inventorySheets.includes(m.sheet))return [m];
+  if(groupShown)return [];
+  groupShown=true;
+  return [{name:'약물·장비',sheet:inInventory?selected:inventoryMenus[0].sheet}];
+ });
+ $('menu').innerHTML=navigation.map(m=>'<button data-sheet="'+esc(m.sheet)+'" '+(m.sheet===selected?'aria-current="page"':'')+'>'+esc(m.name)+'</button>').join('');
+ const item=menus.find(m=>m.sheet===selected);$('title').textContent=inInventory&&item?'약물·장비':item?.name||'메뉴 없음';
  $('connection').textContent=(scheduleState==='ready'?'일정 연결됨':scheduleState==='loading'?'일정 불러오는 중…':'일정 연결 오류 · 새로고침을 눌러 다시 시도해 주세요.')+' · '+({default:'기본 메뉴 표시 중 · 메뉴 시트 미연결',loading:'메뉴 시트 불러오는 중…',ready:'메뉴 시트 연결됨',error:'메뉴 연결 오류 · 마지막으로 불러온 메뉴 표시 중'}[menuState]);
  if(!item){$('content').innerHTML='<div class="panel">표시할 메뉴가 없습니다. 메뉴설정 시트에서 표시를 체크해 주세요.</div>';return}
  if(item.type==='overview'){$('content').innerHTML=overviewView();return}
@@ -99,10 +109,14 @@ function render(){
  else{const list=rows.filter(r=>r.week===week);$('content').innerHTML+='<h2>'+esc(week)+' · '+list.length+'개 분야</h2>'+(list.length?table(['분야','일정','비고'],list.map(r=>[r.field,r.schedule,r.note])):'<div class="panel">일정이 없습니다.</div>')}
  return}
  const data=tables[item.sheet];
+ if(inInventory){
+  const tabs='<div class="tabs" aria-label="약물·장비 목록">'+inventoryMenus.map(m=>'<button data-sheet="'+esc(m.sheet)+'" aria-pressed="'+(m.sheet===selected)+'">'+esc(m.name)+'</button>').join('')+'</div>';
+  $('content').innerHTML=tabs+'<h2>'+esc(item.name)+'</h2>'+(data?.error?'<div class="panel error">'+esc(data.error)+'</div>':filteredInventoryView(data,item.sheet));
+  return;
+ }
  if(data?.error){$('content').innerHTML='<div class="panel error">'+esc(data.error)+'</div>';return}
  if(item.sheet==='협업요청'){$('content').innerHTML=collaborationView(data);return}
  if(item.sheet==='담당자별업무'){$('content').innerHTML=taskView(data);return}
- if(['장비리스트','약물리스트'].includes(item.sheet)){$('content').innerHTML=filteredInventoryView(data,item.sheet);return}
  $('content').innerHTML=data?.rows?.length?table(data.headers,data.rows):'<div class="panel"><h2>아직 등록된 내용이 없습니다.</h2><p>'+(menuState==='ready'?'연결된 시트에 업무를 추가한 뒤 새로고침해 주세요.':'메뉴 시트 연결 후 이 분야의 업무를 표시합니다.')+'</p></div>';
 }
 async function json(url){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url+'?cacheBust='+Date.now(),{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('연결 실패');return await response.json()}finally{clearTimeout(timer)}}
