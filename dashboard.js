@@ -2,7 +2,7 @@
 const SCHEDULE_URL='https://script.google.com/macros/s/AKfycbyUdBAku0GYKoFFgm_0FLB7GgRj7mV8S_rvCBOG5MJkGAkqXRgYNJRIXBhWfIiuOZlA/exec';
 // Set once on deployment to share the menu connection across browsers.
 const MENU_URL='https://script.google.com/macros/s/AKfycbwfnXwjf8hKbxSIp4vsW929JqRaT96vIK_70tPrlBzcdMikXdzdQ573DQq2RLGvTF6IKQ/exec';
-const defaults=[['Overview','overview'],['일정','schedule'],['법인·법률·인허가','법인인허가'],['공간·시설·장비','인테리어'],['인력·조직','인사조직'],['진료·운영시스템','진료운영'],['재무·구매·재고','재무구매재고'],['마케팅·고객유입','마케팅'],['장비 리스트','장비리스트'],['약물 리스트','약물리스트'],['운영시스템','운영시스템'],['CRM','CRM']].map(([name,sheet],order)=>({name,sheet,order,visible:true,type:sheet==='overview'||sheet==='schedule'?sheet:'table'}));
+const defaults=[['Overview','overview'],['일정','schedule'],['법률·인허가','법인인허가'],['인테리어','인테리어'],['인사·노무','인사조직'],['재무·구매·재고','재무구매재고'],['마케팅','마케팅'],['장비 리스트','장비리스트'],['약물 리스트','약물리스트'],['운영시스템','운영시스템'],['CRM','CRM']].map(([name,sheet],order)=>({name,sheet,order,visible:true,type:sheet==='overview'||sheet==='schedule'?sheet:'table'}));
 const goals=[['① 법인·인허가','법인 설립 및 계좌 개설, 1호점 인허가 절차 진행','9/20 중국 법인 설립 예정'],['② 인테리어 착공','설계안 확정 → 공사 착공 및 진행','도면 수정 중'],['③ 정식 파트별 채용','파트별 채용 진행 → 주요 포지션 확정','채용공고 내용 전달 요청 완'],['④ 장비·약품 및 CRM','업체·품목 확정 → 계약·발주','양측 팀 진행 중'],['⑤ 마케팅 채널','메이퇀·SNS·위챗 등 주요 채널 개설 및 입점 준비','법인 설립 후 즉시 진행 준비'],['⑥ SOP·법무문서','운영 SOP 및 근로계약서·동의서·내부 규정 구축 완료','계약서 초안 완, 기타 작성중']];
 let menus=defaults, tables={}, rows=[], selected='overview', week='core', scheduleState='loading', menuState='default', generation=0;
 const $=id=>document.getElementById(id);
@@ -101,7 +101,7 @@ function crmView(data){
  const filtered=data?.rows?{...data,rows:data.rows.filter(r=>!String(r[0]||'').startsWith('사용가이드 · ')&&!String(r[0]||'').startsWith('영상목록 · '))}:data;
  return window.CRMGuide?window.CRMGuide.view(data,crmResourcesView(filtered)):crmResourcesView(data);
 }
-const projectSheets=['법인인허가','인테리어','인사조직','진료운영','재무구매재고','마케팅'];
+const projectSheets=['법인인허가','인테리어','인사조직','재무구매재고','마케팅'];
 function projectView(data,item){
  if(!data||data.error)return '<div class="panel">분야 데이터를 불러오지 못했습니다.</div>';
  const names=['구분','순서','제목','설명','담당','마감일','상태','표시'];
@@ -180,5 +180,4 @@ $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint')
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
-
 
