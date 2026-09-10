@@ -56,12 +56,34 @@ function resourceCell(value){
  try{const url=new URL(raw);if(url.protocol==='https:'&&!url.username&&!url.password)return '<a class="resource-link" href="'+esc(url.href)+'" target="_blank" rel="noopener noreferrer">📁 자료보기</a>'}catch{}
  return esc(raw);
 }
+function inventoryStatus(value){
+ const text=String(value??'').trim()||'미입력';
+ const color=/^(완료|도입 완료|계약 완료|발주 완료)$/.test(text)?'#23573b':/필요|미수신|이슈/.test(text)?'#873b33':/대기|예정/.test(text)?'#73510e':/연락 중|진행|수신/.test(text)?'#254c82':'var(--muted)';
+ return '<span style="display:inline-block;font-size:14px;color:'+color+'">'+esc(text)+'</span>';
+}
 function inventoryView(data){
  const columns=data.headers.map((h,index)=>({name:String(h).trim(),index})).filter(c=>c.name&&!/유통|담당자|연락처|이메일|전화|이메일|email/i.test(c.name));
  const kind=name=>/관련자료|자료링크/.test(name)?'resource':/비고/.test(name)?'note':/제품|명칭/.test(name)?'product':/브랜드|제조사/.test(name)?'brand':/담당팀/.test(name)?'team':/분류/.test(name)?'category':/상태/.test(name)?'status':'other';
  columns.sort((a,b)=>(kind(a.name)==='note'?1:0)-(kind(b.name)==='note'?1:0));
- return '<p class="subtle">총 '+data.rows.length+'개 품목</p><div class="table-wrap inventory-wrap" role="region" aria-label="품목 목록" tabindex="0"><table class="inventory-table"><colgroup>'+columns.map(c=>'<col class="inventory-'+kind(c.name)+'">').join('')+'</colgroup><thead><tr>'+columns.map(c=>'<th scope="col">'+esc(c.name)+'</th>').join('')+'</tr></thead><tbody>'+data.rows.map(r=>'<tr>'+columns.map(c=>'<td>'+(kind(c.name)==='resource'?resourceCell(r[c.index]):esc(r[c.index]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+ return '<p class="subtle">총 '+data.rows.length+'개 품목</p><div class="table-wrap inventory-wrap" role="region" aria-label="품목 목록" tabindex="0"><table class="inventory-table"><colgroup>'+columns.map(c=>'<col class="inventory-'+kind(c.name)+'">').join('')+'</colgroup><thead><tr>'+columns.map(c=>'<th scope="col">'+esc(c.name)+'</th>').join('')+'</tr></thead><tbody>'+data.rows.map(r=>'<tr>'+columns.map(c=>'<td>'+(kind(c.name)==='resource'?resourceCell(r[c.index]):kind(c.name)==='status'?inventoryStatus(r[c.index]):esc(r[c.index]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
 }
+
+const inventoryFilters=Object.create(null);
+function filteredInventoryView(data,sheet){
+ if(!data)return '<div class="panel">목록을 불러오지 못했습니다. 새로고침을 눌러 주세요.</div>';
+ const productIndex=data.headers.findIndex(h=>String(h).trim()==='제품');
+ const statusIndex=data.headers.findIndex(h=>String(h).trim()==='진행상태');
+ const records=data.rows.filter(r=>productIndex<0?r.some(v=>String(v??'').trim()):String(r[productIndex]??'').trim());
+ const status=r=>String(r[statusIndex]??'').trim()||'미입력';
+ const statuses=[...new Set(records.map(status))];
+ let filter=inventoryFilters[sheet]||'';
+ if(filter&&!statuses.includes(filter)){filter='';inventoryFilters[sheet]=''}
+ const visible=records.filter(r=>!filter||status(r)===filter);
+ const controls=statusIndex<0?'':'<div class="toolbar"><label for="inventory-status" style="margin:0">진행상태 <select id="inventory-status" style="font:inherit;color:inherit;padding:8px 12px;background:white;border:1px solid var(--line);border-radius:8px;max-width:100%"><option value="">전체 상태</option>'+statuses.map(s=>'<option value="'+esc(s)+'"'+(s===filter?' selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label></div>';
+ return controls+'<p class="subtle">전체 '+records.length+'개 · 표시 '+visible.length+'개</p>'+(visible.length?inventoryView({...data,rows:visible}).replace(/^<p class="subtle">총 .*?<\/p>/,''):'<div class="panel">아직 등록된 제품이 없습니다.</div>');
+}
+document.addEventListener('change',e=>{if(e.target.id!=='inventory-status')return;inventoryFilters[selected]=e.target.value;render();$('inventory-status')?.focus()});
+
 function goalView(){return '<h2>9월 핵심 추진 목표</h2><p class="subtle">기존 대시보드에 저장된 목표입니다. 이 요약은 아직 시트와 연동되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)}
 function render(){
  $('menu').innerHTML=menus.map(m=>'<button data-sheet="'+esc(m.sheet)+'" '+(m.sheet===selected?'aria-current="page"':'')+'>'+esc(m.name)+'</button>').join('');
@@ -80,7 +102,7 @@ function render(){
  if(data?.error){$('content').innerHTML='<div class="panel error">'+esc(data.error)+'</div>';return}
  if(item.sheet==='협업요청'){$('content').innerHTML=collaborationView(data);return}
  if(item.sheet==='담당자별업무'){$('content').innerHTML=taskView(data);return}
- if(['장비리스트','약물리스트'].includes(item.sheet)&&data?.rows?.length){$('content').innerHTML=inventoryView(data);return}
+ if(['장비리스트','약물리스트'].includes(item.sheet)){$('content').innerHTML=filteredInventoryView(data,item.sheet);return}
  $('content').innerHTML=data?.rows?.length?table(data.headers,data.rows):'<div class="panel"><h2>아직 등록된 내용이 없습니다.</h2><p>'+(menuState==='ready'?'연결된 시트에 업무를 추가한 뒤 새로고침해 주세요.':'메뉴 시트 연결 후 이 분야의 업무를 표시합니다.')+'</p></div>';
 }
 async function json(url){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url+'?cacheBust='+Date.now(),{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('연결 실패');return await response.json()}finally{clearTimeout(timer)}}
