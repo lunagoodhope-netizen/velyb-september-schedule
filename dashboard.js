@@ -2,7 +2,7 @@
 const SCHEDULE_URL='https://script.google.com/macros/s/AKfycbyUdBAku0GYKoFFgm_0FLB7GgRj7mV8S_rvCBOG5MJkGAkqXRgYNJRIXBhWfIiuOZlA/exec';
 // Set once on deployment to share the menu connection across browsers.
 const MENU_URL='https://script.google.com/macros/s/AKfycbwfnXwjf8hKbxSIp4vsW929JqRaT96vIK_70tPrlBzcdMikXdzdQ573DQq2RLGvTF6IKQ/exec';
-const defaults=[['Overview','overview'],['일정','schedule'],['장비 리스트','장비리스트'],['약물 리스트','약물리스트'],['법인·인허가','법인인허가'],['인테리어','인테리어'],['인사·조직','인사조직'],['운영시스템','운영시스템'],['마케팅','마케팅'],['계약·법무','계약법무']].map(([name,sheet],order)=>({name,sheet,order,visible:true,type:sheet==='overview'||sheet==='schedule'?sheet:'table'}));
+const defaults=[['Overview','overview'],['일정','schedule'],['법인·법률·인허가','법인인허가'],['공간·시설·장비','인테리어'],['인력·조직','인사조직'],['진료·운영시스템','진료운영'],['재무·구매·재고','재무구매재고'],['마케팅·고객유입','마케팅'],['장비 리스트','장비리스트'],['약물 리스트','약물리스트'],['운영시스템','운영시스템'],['CRM','CRM']].map(([name,sheet],order)=>({name,sheet,order,visible:true,type:sheet==='overview'||sheet==='schedule'?sheet:'table'}));
 const goals=[['① 법인·인허가','법인 설립 및 계좌 개설, 1호점 인허가 절차 진행','9/20 중국 법인 설립 예정'],['② 인테리어 착공','설계안 확정 → 공사 착공 및 진행','도면 수정 중'],['③ 정식 파트별 채용','파트별 채용 진행 → 주요 포지션 확정','채용공고 내용 전달 요청 완'],['④ 장비·약품 및 CRM','업체·품목 확정 → 계약·발주','양측 팀 진행 중'],['⑤ 마케팅 채널','메이퇀·SNS·위챗 등 주요 채널 개설 및 입점 준비','법인 설립 후 즉시 진행 준비'],['⑥ SOP·법무문서','운영 SOP 및 근로계약서·동의서·내부 규정 구축 완료','계약서 초안 완, 기타 작성중']];
 let menus=defaults, tables={}, rows=[], selected='overview', week='core', scheduleState='loading', menuState='default', generation=0;
 const $=id=>document.getElementById(id);
@@ -101,6 +101,24 @@ function crmView(data){
  const filtered=data?.rows?{...data,rows:data.rows.filter(r=>!String(r[0]||'').startsWith('사용가이드 · ')&&!String(r[0]||'').startsWith('영상목록 · '))}:data;
  return window.CRMGuide?window.CRMGuide.view(data,crmResourcesView(filtered)):crmResourcesView(data);
 }
+const projectSheets=['법인인허가','인테리어','인사조직','진료운영','재무구매재고','마케팅'];
+function projectView(data,item){
+ if(!data||data.error)return '<div class="panel">분야 데이터를 불러오지 못했습니다.</div>';
+ const names=['구분','순서','제목','설명','담당','마감일','상태','표시'];
+ const col=Object.fromEntries(names.map(n=>[n,data.headers.findIndex(h=>String(h).trim()===n)]));
+ if(names.some(n=>col[n]<0))return '<div class="panel">'+esc(item.name)+' 시트의 열 제목을 확인해 주세요.</div>';
+ const records=data.rows.map(r=>Object.fromEntries(names.map(n=>[n,r[col[n]]??'']))).filter(r=>checked(r.표시)&&String(r.제목).trim()).sort((a,b)=>Number(a.순서||999)-Number(b.순서||999));
+ const stages=records.filter(r=>r.구분==='단계'),tasks=records.filter(r=>r.구분==='업무'),issues=records.filter(r=>r.구분==='이슈');
+ const currentIndex=stages.findIndex(r=>String(r.상태).replace(/\s/g,'')==='현재');
+ const completed=stages.filter(r=>r.상태==='완료').length;
+ const current=currentIndex>=0?stages[currentIndex]:null,next=currentIndex>=0?stages[currentIndex+1]:stages.find(r=>r.상태!=='완료');
+ const stageHTML=stages.length?'<div class="stage-track">'+stages.map((s,i)=>{const state=s.상태==='완료'?'done':i===currentIndex?'current':'upcoming';return '<div class="stage '+state+'"><span>'+(state==='done'?'✓':i+1)+'</span><strong>'+esc(s.제목)+'</strong>'+(state==='current'?'<small>현재 위치</small>':'')+'</div>'}).join('')+'</div>':'<p class="subtle">단계를 입력해 주세요.</p>';
+ const summary='<div class="stage-summary"><strong>현재 단계</strong><span>'+esc(current?.제목||'현재 위치 미설정')+'</span><strong>다음 단계</strong><span>'+esc(next?.제목||'미설정')+'</span><b>'+completed+' / '+stages.length+'단계 완료</b></div>';
+ const info=(title,row,fallback)=>'<section class="panel mini-panel"><h2>'+title+'</h2><strong>'+esc(row?.제목||fallback)+'</strong><p class="subtle">'+esc(row?.설명||'시트에서 내용을 입력해 주세요.')+'</p></section>';
+ const taskTable=tasks.length?table(['세부 항목','담당','마감일','상태'],tasks.map(r=>[r.제목,r.담당||'—',r.마감일||'미정',r.상태||'미입력'])):'<div class="panel">등록된 세부 실행 항목이 없습니다.</div>';
+ const issueHTML=issues.length?issues.map(r=>'<div class="issue-item"><strong>'+esc(r.제목)+'</strong>'+(r.설명?'<p>'+esc(r.설명)+'</p>':'')+'</div>').join(''):'<p class="subtle">등록된 이슈가 없습니다.</p>';
+ return '<div class="section-heading"><div><p class="eyebrow">중국사업 · 1호점 징안점</p><h2>'+esc(item.name)+'</h2></div><a class="sheet-button" href="https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit" target="_blank" rel="noopener">시트에서 수정 ↗</a></div><section class="panel stage-panel"><h2>전체 진행단계</h2>'+stageHTML+summary+'</section><div class="project-mini-grid">'+info('현재 단계',current,'현재 위치 미설정')+info('다음 단계 진입 조건',next,'다음 단계 미설정')+info('예정 일정',current,'일정 미설정')+'</div><div class="project-bottom"><section><h2>세부 실행 항목</h2>'+taskTable+'</section><section class="panel issue-panel"><h2>막힘·의사결정 필요</h2>'+issueHTML+'</section></div>';
+}
 function render(){
  const inventorySheets=['약물리스트','장비리스트'];
  const inventoryMenus=inventorySheets.map(sheet=>menus.find(m=>m.sheet===sheet)).filter(Boolean);
@@ -145,6 +163,7 @@ function render(){
   return;
  }
  if(data?.error){$('content').innerHTML='<div class="panel error">'+esc(data.error)+'</div>';return}
+ if(projectSheets.includes(item.sheet)){$('content').innerHTML=projectView(data,item);return}
  if(item.sheet==='협업요청'){$('content').innerHTML=collaborationView(data);return}
  if(item.sheet==='담당자별업무'){$('content').innerHTML=taskView(data);return}
  $('content').innerHTML=data?.rows?.length?table(data.headers,data.rows):'<div class="panel"><h2>아직 등록된 내용이 없습니다.</h2><p>'+(menuState==='ready'?'연결된 시트에 업무를 추가한 뒤 새로고침해 주세요.':'메뉴 시트 연결 후 이 분야의 업무를 표시합니다.')+'</p></div>';
@@ -161,6 +180,5 @@ $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint')
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
-
 
 
