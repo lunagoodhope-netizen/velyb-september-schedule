@@ -2,7 +2,7 @@
 const SCHEDULE_URL='https://script.google.com/macros/s/AKfycbyUdBAku0GYKoFFgm_0FLB7GgRj7mV8S_rvCBOG5MJkGAkqXRgYNJRIXBhWfIiuOZlA/exec';
 // Set once on deployment to share the menu connection across browsers.
 const MENU_URL='https://script.google.com/macros/s/AKfycbwfnXwjf8hKbxSIp4vsW929JqRaT96vIK_70tPrlBzcdMikXdzdQ573DQq2RLGvTF6IKQ/exec';
-const defaults=[['Overview','overview'],['일정','schedule'],['장비·약물','장비약물'],['법인·인허가','법인인허가'],['인테리어','인테리어'],['인사·조직','인사조직'],['운영시스템','운영시스템'],['마케팅','마케팅'],['계약·법무','계약법무']].map(([name,sheet],order)=>({name,sheet,order,visible:true,type:sheet==='overview'||sheet==='schedule'?sheet:'table'}));
+const defaults=[['Overview','overview'],['일정','schedule'],['장비 리스트','장비리스트'],['약물 리스트','약물리스트'],['법인·인허가','법인인허가'],['인테리어','인테리어'],['인사·조직','인사조직'],['운영시스템','운영시스템'],['마케팅','마케팅'],['계약·법무','계약법무']].map(([name,sheet],order)=>({name,sheet,order,visible:true,type:sheet==='overview'||sheet==='schedule'?sheet:'table'}));
 const goals=[['① 법인·인허가','법인 설립 및 계좌 개설, 1호점 인허가 절차 진행','9/20 중국 법인 설립 예정'],['② 인테리어 착공','설계안 확정 → 공사 착공 및 진행','도면 수정 중'],['③ 정식 파트별 채용','파트별 채용 진행 → 주요 포지션 확정','채용공고 내용 전달 요청 완'],['④ 장비·약품 및 CRM','업체·품목 확정 → 계약·발주','양측 팀 진행 중'],['⑤ 마케팅 채널','메이퇀·SNS·위챗 등 주요 채널 개설 및 입점 준비','법인 설립 후 즉시 진행 준비'],['⑥ SOP·법무문서','운영 SOP 및 근로계약서·동의서·내부 규정 구축 완료','계약서 초안 완, 기타 작성중']];
 let menus=defaults, tables={}, rows=[], selected='overview', week='core', scheduleState='loading', menuState='default', generation=0;
 const $=id=>document.getElementById(id);
@@ -50,6 +50,18 @@ function taskView(data){
 function validURL(value){return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(value)}
 function normalizeMenus(input){if(!Array.isArray(input))throw Error('메뉴 형식 오류');const seen=new Set();return input.filter(m=>m.visible===true||String(m.visible).toUpperCase()==='TRUE'||String(m.visible).toUpperCase()==='ON').map((m,i)=>{const sheet=String(m.sheet||'').trim(),name=String(m.name||'').trim();if(!sheet||!name||seen.has(sheet))throw Error('메뉴명과 데이터시트를 확인해 주세요. 데이터시트는 중복될 수 없습니다.');seen.add(sheet);return{name,sheet,type:sheet==='overview'||sheet==='schedule'?sheet:'table',order:Number.isFinite(Number(m.order))?Number(m.order):i}}).sort((a,b)=>a.order-b.order)}
 function table(headers,data){return '<div class="table-wrap"><table><thead><tr>'+headers.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+data.map(r=>'<tr>'+headers.map((_,i)=>'<td>'+esc(r[i])+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
+function resourceCell(value){
+ const raw=String(value??'').trim();
+ if(!raw)return '<span class="subtle">—</span>';
+ try{const url=new URL(raw);if(url.protocol==='https:'&&!url.username&&!url.password)return '<a class="resource-link" href="'+esc(url.href)+'" target="_blank" rel="noopener noreferrer">📁 자료보기</a>'}catch{}
+ return esc(raw);
+}
+function inventoryView(data){
+ const columns=data.headers.map((h,index)=>({name:String(h).trim(),index})).filter(c=>c.name&&!/유통|담당자|연락처|이메일|전화|이메일|email/i.test(c.name));
+ const kind=name=>/관련자료|자료링크/.test(name)?'resource':/비고/.test(name)?'note':/제품|명칭/.test(name)?'product':/브랜드|제조사/.test(name)?'brand':/담당팀/.test(name)?'team':/분류/.test(name)?'category':/상태/.test(name)?'status':'other';
+ columns.sort((a,b)=>(kind(a.name)==='note'?1:0)-(kind(b.name)==='note'?1:0));
+ return '<p class="subtle">총 '+data.rows.length+'개 품목</p><div class="table-wrap inventory-wrap" role="region" aria-label="품목 목록" tabindex="0"><table class="inventory-table"><colgroup>'+columns.map(c=>'<col class="inventory-'+kind(c.name)+'">').join('')+'</colgroup><thead><tr>'+columns.map(c=>'<th scope="col">'+esc(c.name)+'</th>').join('')+'</tr></thead><tbody>'+data.rows.map(r=>'<tr>'+columns.map(c=>'<td>'+(kind(c.name)==='resource'?resourceCell(r[c.index]):esc(r[c.index]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+}
 function goalView(){return '<h2>9월 핵심 추진 목표</h2><p class="subtle">기존 대시보드에 저장된 목표입니다. 이 요약은 아직 시트와 연동되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)}
 function render(){
  $('menu').innerHTML=menus.map(m=>'<button data-sheet="'+esc(m.sheet)+'" '+(m.sheet===selected?'aria-current="page"':'')+'>'+esc(m.name)+'</button>').join('');
@@ -68,6 +80,7 @@ function render(){
  if(data?.error){$('content').innerHTML='<div class="panel error">'+esc(data.error)+'</div>';return}
  if(item.sheet==='협업요청'){$('content').innerHTML=collaborationView(data);return}
  if(item.sheet==='담당자별업무'){$('content').innerHTML=taskView(data);return}
+ if(['장비리스트','약물리스트'].includes(item.sheet)&&data?.rows?.length){$('content').innerHTML=inventoryView(data);return}
  $('content').innerHTML=data?.rows?.length?table(data.headers,data.rows):'<div class="panel"><h2>아직 등록된 내용이 없습니다.</h2><p>'+(menuState==='ready'?'연결된 시트에 업무를 추가한 뒤 새로고침해 주세요.':'메뉴 시트 연결 후 이 분야의 업무를 표시합니다.')+'</p></div>';
 }
 async function json(url){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url+'?cacheBust='+Date.now(),{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('연결 실패');return await response.json()}finally{clearTimeout(timer)}}

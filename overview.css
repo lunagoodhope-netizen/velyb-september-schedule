@@ -54,4 +54,9 @@ th{font-weight:600}td:first-child{font-weight:500}
 .brand .brand-project{margin-top:10px;letter-spacing:-.025em;line-height:1.2}
 .brand-project span{display:block;font-size:16px;font-weight:500;color:#65565a}
 .brand-project strong{display:block;margin-top:1px;font-size:18px;font-weight:600;color:#353638}
+.inventory-table{table-layout:fixed;min-width:1130px}
+.inventory-table .inventory-product{width:200px}.inventory-table .inventory-brand{width:180px}.inventory-table .inventory-team{width:80px}.inventory-table .inventory-category{width:130px}.inventory-table .inventory-status{width:140px}.inventory-table .inventory-resource{width:120px}.inventory-table .inventory-note{width:280px}.inventory-table .inventory-other{width:140px}
+.inventory-table th,.inventory-table td{padding:12px;word-break:normal;overflow-wrap:anywhere}
+.resource-link{display:inline-block;white-space:nowrap;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+@media print{.inventory-table{min-width:0;table-layout:auto}.inventory-table col{width:auto!important}.inventory-table th,.inventory-table td{padding:6px;font-size:10pt}.resource-link{font-size:10pt}}
 @media(max-width:900px){.brand .brand-project{margin-top:0}.brand-project span{font-size:15px}.brand-project strong{font-size:17px}}
