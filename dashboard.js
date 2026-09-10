@@ -85,12 +85,32 @@ function filteredInventoryView(data,sheet){
 document.addEventListener('change',e=>{if(e.target.id!=='inventory-status')return;inventoryFilters[selected]=e.target.value;render();$('inventory-status')?.focus()});
 
 function goalView(){return '<h2>9월 핵심 추진 목표</h2><p class="subtle">기존 대시보드에 저장된 목표입니다. 이 요약은 아직 시트와 연동되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)}
+function crmView(data){
+ const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=215072242';
+ const top='<div class="toolbar"><a href="'+edit+'" target="_blank" rel="noopener noreferrer">CRM 자료 수정 ↗</a></div>';
+ if(!data)return top+'<div class="panel">CRM 자료를 불러오지 못했습니다. 새로고침해 주세요.</div>';
+ if(data.error)return top+'<div class="panel error">'+esc(data.error)+'</div>';
+ const names=['분류','제목','설명','자료 링크','영상 링크'];
+ const cols=names.map(h=>data.headers.findIndex(v=>String(v).trim()===h));
+ if(cols.some(i=>i<0))return top+'<div class="panel">CRM 시트의 첫 행을 확인해 주세요: '+names.join(' · ')+'</div>';
+ const list=data.rows.map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[1]).trim());
+ const link=(value,label)=>resourceCell(value).replace('📁 자료보기',label);
+ return top+(list.length?'<div class="table-wrap"><table><thead><tr>'+['분류','제목','설명','자료보기'].map(h=>'<th scope="col">'+h+'</th>').join('')+'</tr></thead><tbody>'+list.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+(r[3]||r[4]?[r[3]?link(r[3],'자료 / 텍스트'):null,r[4]?link(r[4],'동영상'):null].filter(Boolean).join('<br>'):'<span class="subtle">자료 등록 전</span>')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="panel">등록된 CRM 자료가 없습니다.</div>');
+}
 function render(){
  const inventorySheets=['약물리스트','장비리스트'];
  const inventoryMenus=inventorySheets.map(sheet=>menus.find(m=>m.sheet===sheet)).filter(Boolean);
  const inInventory=inventorySheets.includes(selected);
  let groupShown=false;
+ const operationMenus=menus.filter(m=>['운영시스템','CRM'].includes(m.sheet));
+ const inOperations=['운영시스템','CRM'].includes(selected);
+ let operationsShown=false;
  const navigation=menus.flatMap(m=>{
+  if(['운영시스템','CRM'].includes(m.sheet)){
+   if(operationsShown)return [];
+   operationsShown=true;
+   return [{name:'운영시스템',sheet:inOperations?selected:(operationMenus.find(m=>m.sheet==='CRM')||m).sheet}];
+  }
   if(!inventorySheets.includes(m.sheet))return [m];
   if(groupShown)return [];
   groupShown=true;
@@ -109,6 +129,12 @@ function render(){
  else{const list=rows.filter(r=>r.week===week);$('content').innerHTML+='<h2>'+esc(week)+' · '+list.length+'개 분야</h2>'+(list.length?table(['분야','일정','비고'],list.map(r=>[r.field,r.schedule,r.note])):'<div class="panel">일정이 없습니다.</div>')}
  return}
  const data=tables[item.sheet];
+ if(inOperations){
+  $('title').textContent='운영시스템';
+  const tabs='<div class="tabs" aria-label="운영시스템">'+operationMenus.map(m=>'<button data-sheet="'+esc(m.sheet)+'" aria-pressed="'+(m.sheet===selected)+'">'+esc(m.sheet==='운영시스템'?'운영 현황':m.name)+'</button>').join('')+'</div>';
+  $('content').innerHTML=tabs+(item.sheet==='CRM'?crmView(data):data?.error?'<div class="panel error">'+esc(data.error)+'</div>':data?.rows?.length?table(data.headers,data.rows):'<div class="panel">등록된 운영 현황이 없습니다.</div>');
+  return;
+ }
  if(inInventory){
   const tabs='<div class="tabs" aria-label="약물·장비 목록">'+inventoryMenus.map(m=>'<button data-sheet="'+esc(m.sheet)+'" aria-pressed="'+(m.sheet===selected)+'">'+esc(m.name)+'</button>').join('')+'</div>';
   $('content').innerHTML=tabs+'<h2>'+esc(item.name)+'</h2>'+(data?.error?'<div class="panel error">'+esc(data.error)+'</div>':filteredInventoryView(data,item.sheet));
@@ -131,6 +157,5 @@ $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint')
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
-
 
 
