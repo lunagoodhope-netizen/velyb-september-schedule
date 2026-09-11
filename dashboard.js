@@ -48,7 +48,7 @@ function taskView(data){
  return '<p class="subtle">담당자를 선택해 전달받은 업무를 확인하세요. 업무 변경 후 새로고침을 누르면 최신 내용이 표시됩니다.</p>'+controls+'<p class="subtle">'+esc(taskOwner===null?'전체 업무':taskOwner||'담당자 미지정')+' · '+visible.length+'건</p>'+(visible.length?table(data.headers,visible):'<div class="panel">아직 등록된 업무가 없습니다.</div>');
 }
 function validURL(value){return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(value)}
-function normalizeMenus(input){if(!Array.isArray(input))throw Error('메뉴 형식 오류');const seen=new Set();return input.filter(m=>m.visible===true||String(m.visible).toUpperCase()==='TRUE'||String(m.visible).toUpperCase()==='ON').map((m,i)=>{const sheet=String(m.sheet||'').trim(),name=String(m.name||'').trim();if(!sheet||!name||seen.has(sheet))throw Error('메뉴명과 데이터시트를 확인해 주세요. 데이터시트는 중복될 수 없습니다.');seen.add(sheet);return{name,sheet,type:sheet==='overview'||sheet==='schedule'?sheet:'table',order:Number.isFinite(Number(m.order))?Number(m.order):i}}).sort((a,b)=>a.order-b.order)}
+function normalizeMenus(input){if(!Array.isArray(input))throw Error('메뉴 형식 오류');const seen=new Set();return input.filter(m=>m.sheet!=='메뉴설정').filter(m=>m.visible===true||String(m.visible).toUpperCase()==='TRUE'||String(m.visible).toUpperCase()==='ON').map((m,i)=>{const sheet=String(m.sheet||'').trim(),name=String(m.name||'').trim();if(!sheet||!name||seen.has(sheet))throw Error('메뉴명과 데이터시트를 확인해 주세요. 데이터시트는 중복될 수 없습니다.');seen.add(sheet);return{name,sheet,type:sheet==='overview'||sheet==='schedule'?sheet:'table',order:Number.isFinite(Number(m.order))?Number(m.order):i}}).sort((a,b)=>a.order-b.order)}
 function table(headers,data){return '<div class="table-wrap"><table><thead><tr>'+headers.map(h=>'<th scope="col">'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+data.map(r=>'<tr>'+headers.map((_,i)=>'<td>'+esc(r[i])+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
 function resourceCell(value){
  const raw=String(value??'').trim();
@@ -180,4 +180,5 @@ $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint')
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
+
 

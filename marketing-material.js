@@ -24,6 +24,7 @@ function addMaterialColumn(html,data){
  });
  return tpl.innerHTML;
 }
+window.marketingMaterialColumn=addMaterialColumn;
 projectView=function(data,item){
  const html=previousProjectView(data,item);
  return item?.sheet==='마케팅'?addMaterialColumn(html,data):html;
