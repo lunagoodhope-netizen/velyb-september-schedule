@@ -162,6 +162,7 @@ function render(){
   $('content').innerHTML=tabs+'<h2>'+esc(item.name)+'</h2>'+(data?.error?'<div class="panel error">'+esc(data.error)+'</div>':filteredInventoryView(data,item.sheet));
   return;
  }
+ if(item.sheet==='마케팅'){$('content').innerHTML=projectView(data,item);return}
  if(data?.error){$('content').innerHTML='<div class="panel error">'+esc(data.error)+'</div>';return}
  if(projectSheets.includes(item.sheet)){$('content').innerHTML=projectView(data,item);return}
  if(item.sheet==='협업요청'){$('content').innerHTML=collaborationView(data);return}
