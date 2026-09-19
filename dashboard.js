@@ -84,7 +84,16 @@ function filteredInventoryView(data,sheet){
 }
 document.addEventListener('change',e=>{if(e.target.id!=='inventory-status')return;inventoryFilters[selected]=e.target.value;render();$('inventory-status')?.focus()});
 
-function goalView(){return '<h2>9월 핵심 추진 목표</h2><p class="subtle">기존 대시보드에 저장된 목표입니다. 이 요약은 아직 시트와 연동되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)}
+function goalView(){
+ const data=tables['핵심추진목표'];
+ const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=9192026';
+ const top='<div class="section-heading"><div><h2>9월 핵심 추진 목표</h2></div><a class="sheet-button" href="'+edit+'" target="_blank" rel="noopener">핵심 추진 목표 시트 수정 ↗</a></div>';
+ if(data&&!data.error&&Array.isArray(data.headers)&&Array.isArray(data.rows)){
+  const cols=['분야','9월 목표','비고'].map(h=>data.headers.findIndex(v=>String(v).trim()===h));
+  if(cols.every(i=>i>=0)){const list=data.rows.map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[0]).trim());return top+table(['분야','9월 목표','비고'],list)}
+ }
+ return top+'<p class="subtle">시트 연결 데이터를 불러오는 중이거나 아직 Apps Script 응답에 새 시트가 반영되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)
+}
 function crmResourcesView(data){
  const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=215072242';
  const top='<div class="toolbar"><a href="'+edit+'" target="_blank" rel="noopener noreferrer">CRM 자료 수정 ↗</a></div>';
