@@ -85,14 +85,14 @@ function filteredInventoryView(data,sheet){
 document.addEventListener('change',e=>{if(e.target.id!=='inventory-status')return;inventoryFilters[selected]=e.target.value;render();$('inventory-status')?.focus()});
 
 function goalView(){
- const data=tables['핵심추진일정']||tables['핵심추진목표'];
+ const data=tables['핵심추진목표'];
  const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=9192026';
- const top='<div class="section-heading"><div><h2>핵심 추진 일정</h2></div><a class="sheet-button" href="'+edit+'" target="_blank" rel="noopener">핵심 추진 일정 시트 수정 ↗</a></div>';
+ const top='<div class="section-heading"><div><h2>9월 핵심 추진 목표</h2></div><a class="sheet-button" href="'+edit+'" target="_blank" rel="noopener">핵심 추진 목표 시트 수정 ↗</a></div>';
  if(data&&!data.error&&Array.isArray(data.headers)&&Array.isArray(data.rows)){
-  const targetHeaders=data.headers.includes('핵심 추진 일정')?['분야','핵심 추진 일정','비고']:data.headers.includes('일정')?['분야','일정','비고']:['분야','9월 목표','비고']; const cols=targetHeaders.map(h=>data.headers.findIndex(v=>String(v).trim()===h));
-  if(cols.every(i=>i>=0)){const list=data.rows.map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[0]).trim());return top+table(['분야','핵심 추진 일정','비고'],list)}
+  const cols=['분야','9월 목표','비고'].map(h=>data.headers.findIndex(v=>String(v).trim()===h));
+  if(cols.every(i=>i>=0)){const list=data.rows.map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[0]).trim());return top+table(['분야','9월 목표','비고'],list)}
  }
- return top+'<p class="subtle">핵심추진일정 시트 연결 데이터를 불러오는 중이거나 Apps Script 응답에 아직 반영되지 않았습니다.</p>'+table(['분야','핵심 추진 일정','비고'],goals)
+ return top+'<p class="subtle">핵심추진목표 시트 연결 데이터를 불러오는 중이거나 Apps Script 응답에 아직 반영되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)
 }
 function crmResourcesView(data){
  const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=215072242';
@@ -154,7 +154,7 @@ function render(){
  if(item.type==='overview'){$('content').innerHTML=overviewView();return}
  if(item.type==='schedule'){
  const weeks=[...new Set(['2주차','3주차','4주차',...rows.map(r=>r.week)])];
- $('content').innerHTML='<div class="tabs" aria-label="일정 구분">'+['core',...weeks].map(w=>'<button data-week="'+esc(w)+'" aria-pressed="'+(w===week)+'">'+esc(w==='core'?'핵심 추진 일정':w)+'</button>').join('')+'</div>';
+ $('content').innerHTML='<div class="tabs" aria-label="일정 구분">'+['core',...weeks].map(w=>'<button data-week="'+esc(w)+'" aria-pressed="'+(w===week)+'">'+esc(w==='core'?'9월 핵심 추진 목표':w)+'</button>').join('')+'</div>';
  if(week==='core')$('content').innerHTML+=goalView();
  else if(scheduleState!=='ready')$('content').innerHTML+='<div class="panel">'+(scheduleState==='loading'?'일정을 불러오는 중입니다.':'일정을 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.')+'</div>';
  else{const list=rows.filter(r=>r.week===week);$('content').innerHTML+='<h2>'+esc(week)+' · '+list.length+'개 분야</h2>'+(list.length?table(['분야','일정','비고'],list.map(r=>[r.field,r.schedule,r.note])):'<div class="panel">일정이 없습니다.</div>')}
