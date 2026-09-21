@@ -121,12 +121,11 @@ function projectView(data,item){
  const currentIndex=stages.findIndex(r=>String(r.상태).replace(/\s/g,'')==='현재');
  const completed=stages.filter(r=>r.상태==='완료').length;
  const current=currentIndex>=0?stages[currentIndex]:null,next=currentIndex>=0?stages[currentIndex+1]:stages.find(r=>r.상태!=='완료');
- const stageHTML=stages.length?'<div class="stage-track">'+stages.map((s,i)=>{const state=s.상태==='완료'?'done':String(s.상태).replace(/\s/g,'')==='진행중'?'in-progress':i===currentIndex?'current':'upcoming';return '<div class="stage '+state+'"><span'+(state==='in-progress'?' style="background:#20e000;color:#171923;border-color:#20e000"':'')+'>'+(state==='done'?'✓':i+1)+'</span><strong>'+esc(s.제목)+'</strong>'+(state==='current'?'<small>현재 위치</small>':'')+'</div>'}).join('')+'</div>':'<p class="subtle">단계를 입력해 주세요.</p>';
- const summary='<div class="stage-summary"><strong>현재 단계</strong><span>'+esc(current?.제목||'현재 위치 미설정')+'</span><strong>다음 단계</strong><span>'+esc(next?.제목||'미설정')+'</span><b>'+completed+' / '+stages.length+'단계 완료</b></div>';
+ const stageHTML=stages.length?'<div class="stage-track" aria-label="전체 진행단계">'+stages.map((s,i)=>{const state=s.상태==='완료'?'done':String(s.상태).replace(/\s/g,'')==='진행중'||i===currentIndex?'current':'upcoming';return '<div class="stage '+state+'"><span>'+(state==='done'?'✓':i+1)+'</span><strong>'+esc(s.제목)+'</strong></div>'}).join('')+'</div>':'<p class="subtle">단계를 입력해 주세요.</p>';
  const info=(title,row,fallback)=>'<section class="panel mini-panel"><h2>'+title+'</h2><strong>'+esc(row?.제목||fallback)+'</strong><p class="subtle">'+esc(row?.설명||'시트에서 내용을 입력해 주세요.')+'</p></section>';
  const taskTable=tasks.length?table(['세부 항목','담당','마감일','상태'],tasks.map(r=>[r.제목,r.담당||'—',r.마감일||'미정',r.상태||'미입력'])):'<div class="panel">등록된 세부 실행 항목이 없습니다.</div>';
  const issueHTML=issues.length?issues.map(r=>'<div class="issue-item"><strong>'+esc(r.제목)+'</strong>'+(r.설명?'<p>'+esc(r.설명)+'</p>':'')+'</div>').join(''):'<p class="subtle">등록된 이슈가 없습니다.</p>';
- return '<div class="section-heading"><div><p class="eyebrow">중국사업 · 1호점 징안점</p><h2>'+esc(item.name)+'</h2></div><a class="sheet-button" href="https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit" target="_blank" rel="noopener">시트에서 수정 ↗</a></div><section class="panel stage-panel"><h2>전체 진행단계</h2>'+stageHTML+summary+'</section><div class="project-mini-grid">'+info('현재 단계',current,'현재 위치 미설정')+info('다음 단계 진입 조건',next,'다음 단계 미설정')+info('예정 일정',current,'일정 미설정')+'</div><div class="project-bottom"><section><h2>세부 실행 항목</h2>'+taskTable+'</section><section class="panel issue-panel"><h2>막힘·의사결정 필요</h2>'+issueHTML+'</section></div>';
+ return '<div class="section-heading"><div><p class="eyebrow">중국사업 · 1호점 징안점</p><h2>'+esc(item.name)+'</h2></div><a class="sheet-button" href="https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit" target="_blank" rel="noopener">시트에서 수정 ↗</a></div><section class="panel stage-panel"><h2>전체 진행단계</h2>'+stageHTML+'</section><div class="project-mini-grid">'+info('현재 단계',current,'현재 위치 미설정')+info('다음 단계 진입 조건',next,'다음 단계 미설정')+info('예정 일정',current,'일정 미설정')+'</div><div class="project-bottom"><section><h2>세부 실행 항목</h2>'+taskTable+'</section><section class="panel issue-panel"><h2>막힘·의사결정 필요</h2>'+issueHTML+'</section></div>';
 }
 function render(){
  const inventorySheets=['약물리스트','장비리스트'];
@@ -190,5 +189,4 @@ $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint')
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
-
 
