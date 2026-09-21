@@ -4,7 +4,7 @@ const SCHEDULE_URL='https://script.google.com/macros/s/AKfycbyUdBAku0GYKoFFgm_0F
 const MENU_URL='https://script.google.com/macros/s/AKfycbwfnXwjf8hKbxSIp4vsW929JqRaT96vIK_70tPrlBzcdMikXdzdQ573DQq2RLGvTF6IKQ/exec';
 const defaults=[['Overview','overview'],['일정','schedule'],['법률·인허가','법인인허가'],['인테리어','인테리어'],['인사·노무','인사조직'],['재무·구매·재고','재무구매재고'],['마케팅','마케팅'],['장비 리스트','장비리스트'],['약물 리스트','약물리스트'],['운영시스템','운영시스템'],['CRM','CRM']].map(([name,sheet],order)=>({name,sheet,order,visible:true,type:sheet==='overview'||sheet==='schedule'?sheet:'table'}));
 const goals=[['① 법인·인허가','법인 설립 및 계좌 개설, 1호점 인허가 절차 진행','9/20 중국 법인 설립 예정'],['② 인테리어 착공','설계안 확정 → 공사 착공 및 진행','도면 수정 중'],['③ 정식 파트별 채용','파트별 채용 진행 → 주요 포지션 확정','채용공고 내용 전달 요청 완'],['④ 장비·약품 및 CRM','업체·품목 확정 → 계약·발주','양측 팀 진행 중'],['⑤ 마케팅 채널','메이퇀·SNS·위챗 등 주요 채널 개설 및 입점 준비','법인 설립 후 즉시 진행 준비'],['⑥ SOP·법무문서','운영 SOP 및 근로계약서·동의서·내부 규정 구축 완료','계약서 초안 완, 기타 작성중']];
-let menus=defaults, tables={}, rows=[], selected='overview', scheduleMonth='9월', scheduleState='loading', menuState='default', generation=0;
+let menus=defaults, tables={}, rows=[], selected='overview', week='core', scheduleState='loading', menuState='default', generation=0;
 const $=id=>document.getElementById(id);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function savedURL(){try{return localStorage.getItem('velyb-menu-url')||MENU_URL}catch{return MENU_URL}}
@@ -62,7 +62,7 @@ function inventoryStatus(value){
  return '<span style="display:inline-block;font-size:14px;color:'+color+'">'+esc(text)+'</span>';
 }
 function inventoryView(data){
- const columns=data.headers.map((h,index)=>({name:String(h).trim(),index})).filter(c=>c.name&&!/유통|담당자|연락처|이메일|전화|이메일|email/i.test(c.name));
+ const columns=data.headers.map((h,index)=>({name:String(h).trim(),index})).filter(c=>c.name&&!/유통|담당자|연락처|이메일|전화|email|관련자료|자료링크/i.test(c.name));
  const kind=name=>/관련자료|자료링크/.test(name)?'resource':/비고/.test(name)?'note':/제품|명칭/.test(name)?'product':/브랜드|제조사/.test(name)?'brand':/담당팀/.test(name)?'team':/분류/.test(name)?'category':/상태/.test(name)?'status':'other';
  columns.sort((a,b)=>(kind(a.name)==='note'?1:0)-(kind(b.name)==='note'?1:0));
  return '<p class="subtle">총 '+data.rows.length+'개 품목</p><div class="table-wrap inventory-wrap" role="region" aria-label="품목 목록" tabindex="0"><table class="inventory-table"><colgroup>'+columns.map(c=>'<col class="inventory-'+kind(c.name)+'">').join('')+'</colgroup><thead><tr>'+columns.map(c=>'<th scope="col">'+esc(c.name)+'</th>').join('')+'</tr></thead><tbody>'+data.rows.map(r=>'<tr>'+columns.map(c=>'<td>'+(kind(c.name)==='resource'?resourceCell(r[c.index]):kind(c.name)==='status'?inventoryStatus(r[c.index]):esc(r[c.index]))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
@@ -84,36 +84,15 @@ function filteredInventoryView(data,sheet){
 }
 document.addEventListener('change',e=>{if(e.target.id!=='inventory-status')return;inventoryFilters[selected]=e.target.value;render();$('inventory-status')?.focus()});
 
-function goalView(month){
+function goalView(){
  const data=tables['핵심추진목표'];
  const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=9192026';
- const top='<div class="section-heading"><div><h2>'+esc(month)+' 핵심 추진 목표</h2></div><a class="sheet-button" href="'+edit+'" target="_blank" rel="noopener">핵심 추진 목표 시트 수정 ↗</a></div>';
+ const top='<div class="section-heading"><div><h2>9월 핵심 추진 목표</h2></div><a class="sheet-button" href="'+edit+'" target="_blank" rel="noopener">핵심 추진 목표 시트 수정 ↗</a></div>';
  if(data&&!data.error&&Array.isArray(data.headers)&&Array.isArray(data.rows)){
-  const monthCol=data.headers.findIndex(v=>String(v).trim()==='월');
-  const cols=['분야','핵심 목표','비고'].map(h=>data.headers.findIndex(v=>String(v).trim()===h));
-  if(monthCol>=0&&cols.every(i=>i>=0)){const list=data.rows.filter(r=>String(r[monthCol]??'').trim()===month).map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[0]).trim());return top+(list.length?table(['분야','핵심 목표','비고'],list):'<div class="panel">등록된 핵심 목표가 없습니다.</div>')}
+  const cols=['분야','9월 목표','비고'].map(h=>data.headers.findIndex(v=>String(v).trim()===h));
+  if(cols.every(i=>i>=0)){const list=data.rows.map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[0]).trim());return top+table(['분야','9월 목표','비고'],list)}
  }
- return top+'<p class="subtle">핵심추진목표 시트 연결 데이터를 불러오는 중이거나 Apps Script 응답에 아직 반영되지 않았습니다.</p>'+(month==='9월'?table(['분야','9월 목표','비고'],goals):'<div class="panel">핵심추진목표 시트에서 내용을 입력해 주세요.</div>')
-}
-function scheduleWeeks(month){
- const prefix=month==='10월'?'10월 ':'';
- const preferred=month==='9월'?['2주차','3주차','4주차']:['10월 1주차','10월 2주차','10월 3주차','10월 4주차','10월 5주차'];
- const available=rows.map(r=>r.week).filter(w=>month==='9월'?!/^10월\s/.test(w):w.startsWith(prefix));
- return [...new Set([...preferred,...available])].filter(w=>available.includes(w));
-}
-function shortWeek(week){return week.replace(/^10월\s*/,'')}
-function scheduleView(month){
- const weeks=scheduleWeeks(month);
- const monthlyRows=rows.filter(r=>weeks.includes(r.week));
- const fields=[...new Set(monthlyRows.map(r=>r.field).filter(Boolean))];
- const legend='<div class="schedule-legend" aria-label="상태 이모티콘 안내"><span>✅ 완료</span><span>🔄 진행중</span><span>⏳ 대기</span><span>⚠️ 확인 필요</span></div>';
- const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=0';
- const heading='<div class="section-heading schedule-heading"><div><h2>'+esc(month)+' 주차별 실행 일정</h2><p class="subtle">일정 시트의 일정 칸에서 이모티콘과 문구를 직접 수정할 수 있습니다.</p></div><a class="sheet-button" href="'+edit+'" target="_blank" rel="noopener">일정 시트 수정 ↗</a></div>';
- if(scheduleState!=='ready')return heading+'<div class="panel">'+(scheduleState==='loading'?'일정을 불러오는 중입니다.':'일정을 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.')+'</div>';
- if(!weeks.length)return heading+'<div class="panel">등록된 주차별 일정이 없습니다.</div>';
- const header='<thead><tr><th scope="col">분야</th>'+weeks.map(w=>'<th scope="col"'+(month==='9월'&&w==='4주차'?' class="current-week"':'')+'>'+esc(shortWeek(w))+(month==='9월'&&w==='4주차'?'<span class="week-now">이번 주</span>':'')+'</th>').join('')+'</tr></thead>';
- const body=fields.map(field=>'<tr><td>'+esc(field)+'</td>'+weeks.map(w=>{const item=monthlyRows.find(r=>r.week===w&&r.field===field);return '<td'+(month==='9월'&&w==='4주차'?' class="current-week"':'')+'>'+(item?'<div class="schedule-task">'+esc(item.schedule)+'</div>'+(item.note?'<div class="schedule-note">'+esc(item.note)+'</div>':''):'<span class="schedule-empty">—</span>')+'</td>'}).join('')+'</tr>').join('');
- return heading+legend+'<div class="schedule-grid-wrap"><table class="schedule-grid">'+header+'<tbody>'+body+'</tbody></table></div>';
+ return top+'<p class="subtle">핵심추진목표 시트 연결 데이터를 불러오는 중이거나 Apps Script 응답에 아직 반영되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)
 }
 function crmResourcesView(data){
  const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=215072242';
@@ -142,12 +121,11 @@ function projectView(data,item){
  const currentIndex=stages.findIndex(r=>String(r.상태).replace(/\s/g,'')==='현재');
  const completed=stages.filter(r=>r.상태==='완료').length;
  const current=currentIndex>=0?stages[currentIndex]:null,next=currentIndex>=0?stages[currentIndex+1]:stages.find(r=>r.상태!=='완료');
- const stageHTML=stages.length?'<div class="stage-track">'+stages.map((s,i)=>{const state=s.상태==='완료'?'done':String(s.상태).replace(/\s/g,'')==='진행중'?'in-progress':i===currentIndex?'current':'upcoming';return '<div class="stage '+state+'"><span'+(state==='in-progress'?' style="background:#20e000;color:#171923;border-color:#20e000"':'')+'>'+(state==='done'?'✓':i+1)+'</span><strong>'+esc(s.제목)+'</strong>'+(state==='current'?'<small>현재 위치</small>':'')+'</div>'}).join('')+'</div>':'<p class="subtle">단계를 입력해 주세요.</p>';
- const summary='<div class="stage-summary"><strong>현재 단계</strong><span>'+esc(current?.제목||'현재 위치 미설정')+'</span><strong>다음 단계</strong><span>'+esc(next?.제목||'미설정')+'</span><b>'+completed+' / '+stages.length+'단계 완료</b></div>';
+ const stageHTML=stages.length?'<div class="stage-track" aria-label="전체 진행단계">'+stages.map((s,i)=>{const state=s.상태==='완료'?'done':String(s.상태).replace(/\s/g,'')==='진행중'||i===currentIndex?'current':'upcoming';return '<div class="stage '+state+'"><span>'+(state==='done'?'✓':i+1)+'</span><strong>'+esc(s.제목)+'</strong></div>'}).join('')+'</div>':'<p class="subtle">단계를 입력해 주세요.</p>';
  const info=(title,row,fallback)=>'<section class="panel mini-panel"><h2>'+title+'</h2><strong>'+esc(row?.제목||fallback)+'</strong><p class="subtle">'+esc(row?.설명||'시트에서 내용을 입력해 주세요.')+'</p></section>';
  const taskTable=tasks.length?table(['세부 항목','담당','마감일','상태'],tasks.map(r=>[r.제목,r.담당||'—',r.마감일||'미정',r.상태||'미입력'])):'<div class="panel">등록된 세부 실행 항목이 없습니다.</div>';
  const issueHTML=issues.length?issues.map(r=>'<div class="issue-item"><strong>'+esc(r.제목)+'</strong>'+(r.설명?'<p>'+esc(r.설명)+'</p>':'')+'</div>').join(''):'<p class="subtle">등록된 이슈가 없습니다.</p>';
- return '<div class="section-heading"><div><p class="eyebrow">중국사업 · 1호점 징안점</p><h2>'+esc(item.name)+'</h2></div><a class="sheet-button" href="https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit" target="_blank" rel="noopener">시트에서 수정 ↗</a></div><section class="panel stage-panel"><h2>전체 진행단계</h2>'+stageHTML+summary+'</section><div class="project-mini-grid">'+info('현재 단계',current,'현재 위치 미설정')+info('다음 단계 진입 조건',next,'다음 단계 미설정')+info('예정 일정',current,'일정 미설정')+'</div><div class="project-bottom"><section><h2>세부 실행 항목</h2>'+taskTable+'</section><section class="panel issue-panel"><h2>막힘·의사결정 필요</h2>'+issueHTML+'</section></div>';
+ return '<div class="section-heading"><div><p class="eyebrow">중국사업 · 1호점 징안점</p><h2>'+esc(item.name)+'</h2></div><a class="sheet-button" href="https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit" target="_blank" rel="noopener">시트에서 수정 ↗</a></div><section class="panel stage-panel"><h2>전체 진행단계</h2>'+stageHTML+'</section><div class="project-mini-grid">'+info('현재 단계',current,'현재 위치 미설정')+info('다음 단계 진입 조건',next,'다음 단계 미설정')+info('예정 일정',current,'일정 미설정')+'</div><div class="project-bottom"><section><h2>세부 실행 항목</h2>'+taskTable+'</section><section class="panel issue-panel"><h2>막힘·의사결정 필요</h2>'+issueHTML+'</section></div>';
 }
 function render(){
  const inventorySheets=['약물리스트','장비리스트'];
@@ -174,8 +152,11 @@ function render(){
  if(!item){$('content').innerHTML='<div class="panel">표시할 메뉴가 없습니다. 메뉴설정 시트에서 표시를 체크해 주세요.</div>';return}
  if(item.type==='overview'){$('content').innerHTML=overviewView();return}
  if(item.type==='schedule'){
- const months=['9월','10월'];
- $('content').innerHTML='<div class="tabs month-tabs" aria-label="월별 일정">'+months.map(month=>'<button data-schedule-month="'+esc(month)+'" aria-pressed="'+(month===scheduleMonth)+'">'+esc(month)+'</button>').join('')+'</div>'+goalView(scheduleMonth)+scheduleView(scheduleMonth);
+ const weeks=[...new Set(['2주차','3주차','4주차',...rows.map(r=>r.week)])];
+ $('content').innerHTML='<div class="tabs" aria-label="일정 구분">'+['core',...weeks].map(w=>'<button data-week="'+esc(w)+'" aria-pressed="'+(w===week)+'">'+esc(w==='core'?'9월 핵심 추진 목표':w)+'</button>').join('')+'</div>';
+ if(week==='core')$('content').innerHTML+=goalView();
+ else if(scheduleState!=='ready')$('content').innerHTML+='<div class="panel">'+(scheduleState==='loading'?'일정을 불러오는 중입니다.':'일정을 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.')+'</div>';
+ else{const list=rows.filter(r=>r.week===week);$('content').innerHTML+='<h2>'+esc(week)+' · '+list.length+'개 분야</h2>'+(list.length?table(['분야','일정','비고'],list.map(r=>[r.field,r.schedule,r.note])):'<div class="panel">일정이 없습니다.</div>')}
  return}
  const data=tables[item.sheet];
  if(inOperations){
@@ -201,7 +182,7 @@ async function refresh(){const run=++generation;scheduleState='loading';menuStat
  (async()=>{try{const data=await json(SCHEDULE_URL);if(!Array.isArray(data))throw Error('일정 형식 오류');if(run!==generation)return;rows=data.map(r=>({week:String(r.week||'').trim(),field:String(r.field||'').trim(),schedule:String(r.schedule||''),note:String(r.note||'')})).filter(r=>r.week&&r.field&&r.week!=='주차');scheduleState='ready'}catch{if(run===generation)scheduleState='error'}finally{if(run===generation)render()}})(),
  (async()=>{if(!endpoint)return;try{if(!validURL(endpoint))throw Error('잘못된 주소');const data=await json(endpoint);if(data.error)throw Error(data.error);const next=normalizeMenus(data.menus);if(!data.tables||typeof data.tables!=='object'||Array.isArray(data.tables))throw Error('데이터 형식 오류');for(const t of Object.values(data.tables)){if(!t.error&&(!Array.isArray(t.headers)||!Array.isArray(t.rows)||!t.rows.every(Array.isArray)))throw Error('표 형식 오류')}if(run!==generation)return;menus=next;tables=data.tables;overviewData=data.overview||null;menuState='ready';if(!menus.some(m=>m.sheet===selected))selected=menus[0]?.sheet||''}catch{if(run===generation)menuState='error'}finally{if(run===generation)render()}})()
  ]);}
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.sheet!==undefined){selected=b.dataset.sheet;if(selected==='협업요청')collaborationCategory=null;render()}if(b.dataset.scheduleMonth!==undefined){scheduleMonth=b.dataset.scheduleMonth;render()}});
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.sheet!==undefined){selected=b.dataset.sheet;if(selected==='협업요청')collaborationCategory=null;render()}if(b.dataset.week!==undefined){week=b.dataset.week;render()}});
 document.addEventListener('click',e=>{const b=e.target.closest('button[data-owner]');if(!b)return;taskOwner=b.dataset.owner==='all'?null:taskOwners[Number(b.dataset.owner)];render();document.querySelector('button[data-owner="'+b.dataset.owner+'"]')?.focus()});
 document.addEventListener('click',e=>{const b=e.target.closest('button[data-category]');if(!b)return;collaborationCategory=b.dataset.category==='all'?null:collaborationCategories[Number(b.dataset.category)];render();document.querySelector('button[data-category="'+b.dataset.category+'"]')?.focus()});
 $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint').value=endpoint;
