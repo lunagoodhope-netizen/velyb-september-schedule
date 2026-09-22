@@ -1,5 +1,4 @@
-'const cols=['분야','9월 목표','비고'].map(h=>data.headers.findIndex(v=>String(v).trim()===h));const headerIndex=(...names)=>data.headers.findIndex(v=>names.includes(String(v).trim()));
-  const cols=[headerIndex('분야'),headerIndex('9월 목표','핵심 목표'),headerIndex('비고')];use strict';
+'use strict';
 const SCHEDULE_URL='https://script.google.com/macros/s/AKfycbyUdBAku0GYKoFFgm_0FLB7GgRj7mV8S_rvCBOG5MJkGAkqXRgYNJRIXBhWfIiuOZlA/exec';
 // Set once on deployment to share the menu connection across browsers.
 const MENU_URL='https://script.google.com/macros/s/AKfycbwfnXwjf8hKbxSIp4vsW929JqRaT96vIK_70tPrlBzcdMikXdzdQ573DQq2RLGvTF6IKQ/exec';
@@ -90,7 +89,8 @@ function goalView(){
  const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=9192026';
  const top='<div class="section-heading"><div><h2>9월 핵심 추진 목표</h2></div><a class="sheet-button" href="'+edit+'" target="_blank" rel="noopener">핵심 추진 목표 시트 수정 ↗</a></div>';
  if(data&&!data.error&&Array.isArray(data.headers)&&Array.isArray(data.rows)){
-  const cols=['분야','9월 목표','비고'].map(h=>data.headers.findIndex(v=>String(v).trim()===h));
+  const headerIndex=(...names)=>data.headers.findIndex(v=>names.includes(String(v).trim()));
+  const cols=[headerIndex('분야'),headerIndex('9월 목표','핵심 목표'),headerIndex('비고')];
   if(cols.every(i=>i>=0)){const list=data.rows.map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[0]).trim());return top+table(['분야','9월 목표','비고'],list)}
  }
  return top+'<p class="subtle">핵심추진목표 시트 연결 데이터를 불러오는 중이거나 Apps Script 응답에 아직 반영되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)
