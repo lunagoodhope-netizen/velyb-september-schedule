@@ -1,4 +1,5 @@
-'use strict';
+'const cols=['분야','9월 목표','비고'].map(h=>data.headers.findIndex(v=>String(v).trim()===h));const headerIndex=(...names)=>data.headers.findIndex(v=>names.includes(String(v).trim()));
+  const cols=[headerIndex('분야'),headerIndex('9월 목표','핵심 목표'),headerIndex('비고')];use strict';
 const SCHEDULE_URL='https://script.google.com/macros/s/AKfycbyUdBAku0GYKoFFgm_0FLB7GgRj7mV8S_rvCBOG5MJkGAkqXRgYNJRIXBhWfIiuOZlA/exec';
 // Set once on deployment to share the menu connection across browsers.
 const MENU_URL='https://script.google.com/macros/s/AKfycbwfnXwjf8hKbxSIp4vsW929JqRaT96vIK_70tPrlBzcdMikXdzdQ573DQq2RLGvTF6IKQ/exec';
