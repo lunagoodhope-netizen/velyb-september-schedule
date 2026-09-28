@@ -12,5 +12,4 @@
  document.addEventListener('click',e=>{if(e.target.closest('[data-mk-refresh]'))refresh();if(e.target.closest('[data-mk-print]')){document.querySelector('.mk-more').open=false;window.print()}if(!e.target.closest('.mk-more')){const more=document.querySelector('.mk-more');if(more)more.open=false}});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){const more=document.querySelector('.mk-more[open]');if(more){more.open=false;more.querySelector('summary').focus()}}});
  render();
- setInterval(()=>{if(!document.hidden&&menuState!=='loading')refresh()},60000);
 })();
