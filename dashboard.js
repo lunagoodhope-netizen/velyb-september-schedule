@@ -195,13 +195,14 @@ function projectView(data,item){
  return '<div class="section-heading"><div><p class="eyebrow">중국사업 · 1호점 징안점</p><h2>'+esc(item.name)+'</h2></div><a class="sheet-button" href="https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit" target="_blank" rel="noopener">시트에서 수정 ↗</a></div><section class="panel stage-panel"><h2>전체 진행단계</h2>'+stageHTML+'</section><div class="project-mini-grid">'+info('현재 단계',current,'현재 위치 미설정')+info('다음 단계 진입 조건',next,'다음 단계 미설정')+info('예정 일정',current,'일정 미설정')+'</div><div class="project-bottom"><section><h2>세부 실행 항목</h2>'+taskTable+'</section><section class="panel issue-panel"><h2>막힘·의사결정 필요</h2>'+issueHTML+'</section></div>';
 }
 function render(){
+ if(selected==='운영시스템'){selected='CRM';history.replaceState(null,'','#'+encodeURIComponent(pageHash(selected)))}
  document.querySelector('main').classList.toggle('schedule-page',selected.startsWith('schedule-'));
  document.querySelector('main>.toolbar a').href='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid='+(week==='core'?'9192026':'0');
  const inventorySheets=['약물리스트','장비리스트'];
  const inventoryMenus=inventorySheets.map(sheet=>menus.find(m=>m.sheet===sheet)).filter(Boolean);
  const inInventory=inventorySheets.includes(selected);
  let groupShown=false;
- const operationMenus=menus.filter(m=>['운영시스템','CRM'].includes(m.sheet));
+ const operationMenus=menus.filter(m=>m.sheet==='CRM');
  const inOperations=['운영시스템','CRM'].includes(selected);
  let operationsShown=false;
  let scheduleShown=false;
@@ -210,7 +211,7 @@ function render(){
   if(['운영시스템','CRM'].includes(m.sheet)){
    if(operationsShown)return [];
    operationsShown=true;
-   return [{name:'운영시스템',sheet:inOperations?selected:(operationMenus.find(m=>m.sheet==='CRM')||m).sheet}];
+   return [{name:'운영시스템',sheet:'CRM'}];
   }
   if(!inventorySheets.includes(m.sheet))return [m];
   if(groupShown)return [];
@@ -226,8 +227,8 @@ function render(){
  const data=tables[item.sheet];
  if(inOperations){
   $('title').textContent='운영시스템';
-  const tabs='<div class="tabs" aria-label="운영시스템">'+operationMenus.map(m=>'<button data-sheet="'+esc(m.sheet)+'" aria-pressed="'+(m.sheet===selected)+'">'+esc(m.sheet==='운영시스템'?'운영 현황':m.name)+'</button>').join('')+'</div>';
-  $('content').innerHTML=tabs+(item.sheet==='CRM'?crmView(data):data?.error?'<div class="panel error">'+esc(data.error)+'</div>':data?.rows?.length?table(data.headers,data.rows):'<div class="panel">등록된 운영 현황이 없습니다.</div>');
+  const tabs='<div class="tabs" aria-label="운영시스템">'+operationMenus.map(m=>'<button data-sheet="'+esc(m.sheet)+'" aria-pressed="'+(m.sheet===selected)+'">'+esc(m.name)+'</button>').join('')+'</div>';
+  $('content').innerHTML=tabs+crmView(data);
   return;
  }
  if(inInventory){
