@@ -15,12 +15,20 @@ function pageFromHash(){
 }
 function pageHash(sheet){return sheet==='schedule-september'?'september':sheet==='schedule-october'?'october':sheet}
 function septemberRows(){return rows.filter(r=>!/(?:10|11|12)\s*월|(?:10|11|12)\s*[/.]/.test(r.week))}
+function scheduleCards(data){
+ const groups=[];
+ for(const row of data){
+  if(row[0] || !groups.length)groups.push({title:row[0]||'',items:[]});
+  groups[groups.length-1].items.push(row);
+ }
+ return '<div class="schedule-cards">'+groups.map(group=>'<section class="schedule-card"><h3>'+esc(group.title)+'</h3><ul>'+group.items.map(row=>'<li class="schedule-item'+(row[2]?' has-note':'')+'"><span class="schedule-task">'+esc(row[1])+'</span>'+(row[2]?'<span class="schedule-note"><span class="note-label">비고</span><span>'+esc(row[2])+'</span>':'')+'</li>').join('')+'</ul></section>').join('')+'</div>';
+}
 function monthlyScheduleView(){
  if(selected==='schedule-october'){
   const period=octoberSchedule.periods.find(p=>p.id===week);
   const active=period?week:'core';
   const tabs='<div class="tabs" aria-label="10월 일정 구분">'+[{id:'core',label:'월간 요약'},...octoberSchedule.periods].map(p=>'<button data-week="'+p.id+'" aria-pressed="'+(p.id===active)+'">'+esc(p.label)+'</button>').join('')+'</div>';
-  return '<p class="panel">'+esc(octoberSchedule.notice)+'</p>'+tabs+'<h2>'+esc(period?'10월 '+period.label:'10월 주요 일정')+'</h2>'+table(['분야','주요 일정','비고'],period?period.rows:octoberSchedule.summary);
+  return '<p class="schedule-notice">'+esc(octoberSchedule.notice)+'</p>'+tabs+'<h2>'+esc(period?'10월 '+period.label:'10월 주요 일정')+'</h2>'+scheduleCards(period?period.rows:octoberSchedule.summary);
  }
  const records=septemberRows();
  const weeks=[...new Set(['2주차','3주차','4주차',...records.map(r=>r.week)])];
@@ -29,7 +37,7 @@ function monthlyScheduleView(){
  if(week==='core')return tabs+goalView();
  if(scheduleState!=='ready')return tabs+'<div class="panel">'+(scheduleState==='loading'?'일정을 불러오는 중입니다.':'일정을 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.')+'</div>';
  const list=records.filter(r=>r.week===week);
- return tabs+'<h2>'+esc(week)+' · '+list.length+'개 분야</h2>'+(list.length?table(['분야','일정','비고'],list.map(r=>[r.field,r.schedule,r.note])):'<div class="panel">일정이 없습니다.</div>');
+ return tabs+'<h2>'+esc(week)+' · '+list.length+'개 분야</h2>'+(list.length?scheduleCards(list.map(r=>[r.field,r.schedule,r.note])):'<div class="panel">일정이 없습니다.</div>');
 }
 const goals=[['① 법인·인허가','법인 설립 및 계좌 개설, 1호점 인허가 절차 진행','9/20 중국 법인 설립 예정'],['② 인테리어 착공','설계안 확정 → 공사 착공 및 진행','도면 수정 중'],['③ 정식 파트별 채용','파트별 채용 진행 → 주요 포지션 확정','채용공고 내용 전달 요청 완'],['④ 장비·약품 및 CRM','업체·품목 확정 → 계약·발주','양측 팀 진행 중'],['⑤ 마케팅 채널','메이퇀·SNS·위챗 등 주요 채널 개설 및 입점 준비','법인 설립 후 즉시 진행 준비'],['⑥ SOP·법무문서','운영 SOP 및 근로계약서·동의서·내부 규정 구축 완료','계약서 초안 완, 기타 작성중']];
 let menus=defaults, tables={}, rows=[], selected=pageFromHash(), week='core', scheduleState='loading', menuState='default', generation=0;
@@ -119,9 +127,9 @@ function goalView(){
  if(data&&!data.error&&Array.isArray(data.headers)&&Array.isArray(data.rows)){
   const headerIndex=(...names)=>data.headers.findIndex(v=>names.includes(String(v).trim()));
   const cols=[headerIndex('분야'),headerIndex('9월 목표','핵심 목표'),headerIndex('비고')];
-  if(cols.every(i=>i>=0)){const monthCol=headerIndex('월');const list=data.rows.filter(r=>monthCol<0||['9','9월','09','09월'].includes(String(r[monthCol]).trim())).map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[0]).trim());return top+table(['분야','9월 목표','비고'],list)}
+  if(cols.every(i=>i>=0)){const monthCol=headerIndex('월');const list=data.rows.filter(r=>monthCol<0||['9','9월','09','09월'].includes(String(r[monthCol]).trim())).map(r=>cols.map(i=>r[i]??'')).filter(r=>String(r[0]).trim());return top+scheduleCards(list)}
  }
- return top+'<p class="subtle">핵심추진목표 시트 연결 데이터를 불러오는 중이거나 Apps Script 응답에 아직 반영되지 않았습니다.</p>'+table(['분야','9월 목표','비고'],goals)
+ return top+'<p class="subtle">핵심추진목표 시트 연결 데이터를 불러오는 중이거나 Apps Script 응답에 아직 반영되지 않았습니다.</p>'+scheduleCards(goals)
 }
 function crmResourcesView(data){
  const edit='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid=215072242';
