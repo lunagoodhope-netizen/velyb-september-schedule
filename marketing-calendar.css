@@ -6,3 +6,18 @@
 
 .marketing-sections{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:16px;margin:0 0 22px}.marketing-sections button[aria-pressed=true]{background:#74404a;color:#fff;border-color:#74404a}.mk-edit{font-size:13px;margin-top:20px}.mk-table thead th{background:#70424c}.mk-weekcell strong{font-size:16px;white-space:nowrap}.mcal-head h2{font-size:24px}.mcal-scroll{overflow:auto}.mcal-week,.mcal-grid{min-width:650px}.mcal-item{background:#f3e8eb}.mk-weekcell{min-width:138px}
 .mk-note{min-width:110px}.mk-note span{white-space:nowrap}
+/* B: inline title and underline tabs, with secondary actions in overflow. */
+main:has(.mk-header)>header,main:has(.mk-header)>.toolbar,main:has(.mk-header)>#connection,main:has(.mk-header)>details{display:none}
+.mk-header{display:flex;align-items:center;gap:30px;margin:0 0 32px;padding:0 0 0;border-bottom:1px solid #d9cfd2;min-height:76px}
+.mk-header h1{font-size:32px;line-height:1.2;margin:0;white-space:nowrap;padding-right:30px;border-right:1px solid #d9cfd2}
+.mk-header .marketing-sections{align-self:stretch;align-items:stretch;gap:12px;flex-wrap:nowrap;border:0;margin:0;padding:0}
+.mk-header .marketing-sections button{padding:18px 20px;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:#82777a;font-size:17px;white-space:nowrap}
+.mk-header .marketing-sections button[aria-pressed=true]{background:transparent;color:#70424c;border-bottom-color:#70424c;font-weight:700}
+.mk-tools{display:flex;align-items:center;gap:12px;margin-left:auto}
+.mk-refresh,.mk-more>summary{display:flex;align-items:center;justify-content:center;width:42px;height:42px;padding:8px;border:0;border-radius:50%;background:transparent;color:#49383e}
+.mk-refresh:hover,.mk-more>summary:hover{background:#eee4e7}.mk-refresh svg{width:26px;height:26px}
+.mk-more{position:relative;margin:0}.mk-more>summary{font-size:28px;line-height:1;list-style:none}.mk-more>summary::-webkit-details-marker{display:none}
+.mk-more-panel{position:absolute;right:0;top:50px;z-index:20;min-width:200px;padding:7px;background:#fff;border:1px solid #e6dfe0;border-radius:12px;box-shadow:0 8px 30px #50283118}
+.mk-more-panel button,.mk-more-panel a{display:block;width:100%;padding:12px;text-align:left;background:transparent;border:0;border-radius:7px;text-decoration:none;color:#49383e;font-size:14px;white-space:nowrap}.mk-more-panel button:hover,.mk-more-panel a:hover{background:#f6eff1}
+@media(max-width:650px){.mk-header{gap:12px;flex-wrap:wrap;margin-bottom:22px}.mk-header h1{font-size:26px;padding-right:0;border:0}.mk-tools{order:1}.mk-header .marketing-sections{order:2;width:100%;gap:8px}.mk-header .marketing-sections button{padding:13px 14px;font-size:15px}.mk-header{padding-top:6px}}
+@media print{.mk-tools,.mk-header .marketing-sections{display:none}.mk-header h1{border:0}.mk-header{min-height:0;padding-bottom:14px;margin-bottom:18px}}
