@@ -1,0 +1,46 @@
+/* Shared B design: title, underline navigation, and discreet utility menu. */
+:root{--blue:#eee4e7;--blue2:#f1e8eb;--rose-ink:#70424c;--rose:#70424c;--pink:#f4eaed;--ink:#302b2e;--muted:#82777a;--line:#e5dde0}
+.unified-page{min-width:0;display:block;align-self:start;margin:0 auto}
+.unified-page .mk-header{position:relative;z-index:3;gap:24px;min-width:0}
+.unified-page .mk-header h1{font-size:30px;letter-spacing:-.035em;flex:none}
+.unified-page .mk-header.without-tabs h1{border-right:0;padding-right:0}
+.unified-page .mk-header .marketing-sections{min-width:0;flex:0 1 auto;overflow-x:auto;overflow-y:hidden;gap:6px}
+.unified-page .mk-header .marketing-sections button{font-size:15px;padding:18px 17px;flex:none}
+.unified-page .mk-tools{flex:none}
+.unified-page .mk-more-panel{min-width:238px}
+.header-status{border-top:1px solid var(--line);padding:12px 12px 5px;font-size:11px;color:var(--muted);max-width:250px;line-height:1.7}
+main.unified-page.show-connection-settings>details{display:block;margin:24px 0}
+.unified-page>footer{font-size:12px;border-top:1px solid var(--line);padding-top:18px;text-align:right;color:#9b868f;margin-top:30px}
+.unified-page .schedule-heading{padding:0 0 24px}
+.unified-page .shanghai-skyline{top:-22px;right:0;width:240px;height:90px;opacity:.42}
+.unified-page .schedule-controls{position:relative;z-index:1}
+.unified-page .schedule-notice{background:#f1e5e8}
+.unified-page .week-tabs{box-shadow:none}
+.unified-page .week-tabs button[aria-pressed=true]{background:#70424c;color:white}
+.unified-page #content>.tabs:not(.week-tabs){border-bottom:1px solid var(--line);gap:6px;padding-bottom:10px}
+.unified-page #content>.tabs button{background:transparent;border:0;border-radius:6px;color:#82777a}
+.unified-page #content>.tabs button[aria-pressed=true]{background:#eee1e5;color:#70424c}
+.unified-page .panel,.unified-page .card,.unified-page .field-card{border-color:var(--line);border-radius:12px;box-shadow:0 3px 16px #50283105}
+.unified-page .panel h2,.unified-page .field-section h2{color:#393035;font-size:20px}
+.unified-page .table-wrap{border-color:var(--line);border-radius:12px}
+.unified-page th{background:#f1e8eb;color:#64434e;border-color:var(--line)}
+.unified-page td{border-color:var(--line)}
+.unified-page td:first-child{background:#f8f3f5}
+.unified-page td:last-child{background:#fff}
+.unified-page .mk-table th{background:#70424c;color:#fff}
+.unified-page .mk-table .mk-weekcell{background:#f3e8ec;color:#70424c}
+.unified-page .mk-icon.photo,.unified-page .mk-icon.video{background:#96717e}
+.unified-page .mk-topic,.unified-page .mk-detail,.unified-page .mk-date{color:#493d43}
+.unified-page .stage.done>span,.unified-page .stage.done:before,.unified-page .stage.current:before{background:#70424c;border-color:#70424c}
+.unified-page .stage.current>span{border-color:#70424c;color:#70424c;background:#f3e8ec;box-shadow:0 0 0 4px #faf4f6}
+.unified-page .stage.current strong{color:#70424c}
+.unified-page .issue-item{background:#f5edef}
+.unified-page .ov-track>div{background:#70424c}
+.unified-page .ov-open{background:#f2e7eb;border-color:#e6d9df}
+.unified-page .ov-heading{margin-bottom:22px}
+.unified-page .field-icon{background:#f0e3e8;color:#70424c}
+.unified-page .main-card-switch button[aria-pressed=true]{background:#f0e3e8;color:#70424c}
+@media(max-width:1100px){.unified-page .mk-header{gap:14px}.unified-page .mk-header h1{font-size:26px;padding-right:18px}.unified-page .mk-header .marketing-sections button{padding:18px 12px;font-size:14px}.unified-page .mk-tools{gap:4px}}
+@media(max-width:800px){.unified-page .project-mini-grid,.unified-page .project-bottom{grid-template-columns:1fr}.unified-page .stage-track{overflow-x:auto;gap:14px;padding-bottom:8px}.unified-page .stage{min-width:95px}}
+@media(max-width:650px){.unified-page .mk-header{flex-wrap:wrap;gap:10px}.unified-page .mk-header h1{padding-right:0}.unified-page .mk-header .marketing-sections{width:100%;flex:1 1 100%}.unified-page .mk-header .marketing-sections button{padding:13px 14px}.unified-page .mk-header.without-tabs{padding-bottom:18px}.unified-page .shanghai-skyline{width:170px;height:75px;top:-10px}.unified-page .mk-tools{margin-left:auto}}
+@media print{.unified-page .mk-tools,.unified-page .mk-header .marketing-sections,main.unified-page.show-connection-settings>details{display:none}.unified-page .mk-header h1{border:0}.unified-page .mk-header{margin-bottom:18px}}
