@@ -19,7 +19,7 @@ function septemberRows(){return rows.filter(r=>!/(?:10|11|12)\s*월|(?:10|11|12)
 function scheduleCards(data){
  const groups=[];
  for(const row of data){
-  if(row[0] || !groups.length)groups.push({title:row[0]||'',items:[]});
+  if(!groups.length || (row[0] && row[0]!==groups[groups.length-1].title))groups.push({title:row[0]||'',items:[]});
   groups[groups.length-1].items.push(row);
  }
  return '<div class="schedule-cards">'+groups.map(group=>'<section class="schedule-card"><h3>'+scheduleIcon(group.title)+esc(group.title)+'</h3><ul>'+group.items.map(row=>'<li class="schedule-item'+(row[2]?' has-note':'')+'"><span class="schedule-task">'+esc(row[1])+'</span>'+(row[2]?'<span class="schedule-note"><span>'+esc(row[2])+'</span>':'')+'</li>').join('')+'</ul></section>').join('')+'</div>';
@@ -34,12 +34,29 @@ function scheduleHeading(tabs,notice){
  return '<div class="schedule-heading"><div class="schedule-title"><h2>'+month+'월 일정</h2>'+monthTabs+'</div><img class="shanghai-skyline" src="shanghai-skyline.svg" alt="" aria-hidden="true"><div class="schedule-controls">'+(notice?'<p class="schedule-notice"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 9a6 6 0 0112 0v6l2 3H4l2-3zM10 21h4"/></svg>'+esc(notice)+'</p>':'<span></span>')+tabs+'</div></div>';
 }
 function monthlyScheduleView(){
- if(selected==='schedule-november')return scheduleHeading('','')+'<div class="schedule-empty">등록된 11월 일정이 없습니다.</div>';
- if(selected==='schedule-october'){
-  const period=octoberSchedule.periods.find(p=>p.id===week);
+ if(selected==='schedule-october'||selected==='schedule-november'){
+  const month=selected==='schedule-october'?'10':'11';
+  const records=rows.filter(r=>new RegExp('^'+month+'\\s*월').test(r.week));
+  const base=month==='10'?[{id:'early',label:'1–2주차 (10/1–10)'},{id:'middle',label:'3–4주차 (10/11–21)'},{id:'late',label:'4–5주차 (10/22–31)'}]:[];
+  const periods=base.map(p=>({...p,key:month+'월 '+p.label}));
+  for(const key of [...new Set(records.map(r=>r.week))])if(!periods.some(p=>p.key===key))periods.push({id:'sheet-'+periods.length,label:key.replace(new RegExp('^'+month+'\\s*월\\s*'),''),key});
+  const period=periods.find(p=>p.id===week);
   const active=period?week:'core';
-  const tabs='<div class="tabs week-tabs" aria-label="10월 일정 구분">'+[{id:'core',label:'월간 요약'},...octoberSchedule.periods].map(p=>'<button data-week="'+p.id+'" aria-label="'+esc(p.label)+'" aria-pressed="'+(p.id===active)+'">'+esc(p.id==='core'?p.label:p.label.match(/\((.*?)\)/)[1])+'</button>').join('')+'</div>';
-  return scheduleHeading(tabs,octoberSchedule.notice)+scheduleCards(period?period.rows:octoberSchedule.summary);
+  const tabs='<div class="tabs week-tabs" aria-label="'+month+'월 일정 구분">'+[{id:'core',label:'월간 요약'},...periods].map(p=>'<button data-week="'+esc(p.id)+'" aria-label="'+esc(p.label)+'" aria-pressed="'+(p.id===active)+'">'+esc(p.label.match(/\((.*?)\)/)?.[1]||p.label)+'</button>').join('')+'</div>';
+  const heading=scheduleHeading(tabs,month==='10'?'10/1–7 국경절 휴무 · 10/8(목) 업무 재개':'');
+  if(period){
+   if(scheduleState!=='ready')return heading+'<div class="schedule-empty">'+(scheduleState==='loading'?'구글시트 일정을 불러오는 중입니다.':'구글시트 연결에 실패했습니다. 새로고침해 주세요.')+'</div>';
+   const list=records.filter(r=>r.week===period.key).map(r=>[r.field,r.schedule,r.note]);
+   return heading+(list.length?scheduleCards(list):'<div class="schedule-empty">등록된 일정이 없습니다.</div>');
+  }
+  if(menuState!=='ready')return heading+'<div class="schedule-empty">'+(menuState==='loading'?'구글시트 월간 요약을 불러오는 중입니다.':'구글시트 연결에 실패했습니다. 새로고침해 주세요.')+'</div>';
+  const data=tables['핵심추진목표'];
+  const headers=data?.headers||[];
+  const mi=headers.findIndex(h=>String(h).trim()==='월');
+  const cols=['분야','핵심 목표','비고'].map(h=>headers.findIndex(v=>String(v).trim()===h));
+  if(data?.error||mi<0||cols.some(i=>i<0))return heading+'<div class="schedule-empty">핵심추진목표 시트의 월·분야·핵심 목표·비고 열을 확인해 주세요.</div>';
+  const list=data.rows.filter(r=>[month,month+'월'].includes(String(r[mi]).trim())).map(r=>cols.map(i=>String(r[i]??''))).filter(r=>r[0]||r[1]||r[2]);
+  return heading+(list.length?scheduleCards(list):'<div class="schedule-empty">등록된 '+month+'월 일정이 없습니다.</div>');
  }
  const records=septemberRows();
  const weeks=[...new Set(['2주차','3주차','4주차',...records.map(r=>r.week)])];
@@ -179,6 +196,7 @@ function projectView(data,item){
 }
 function render(){
  document.querySelector('main').classList.toggle('schedule-page',selected.startsWith('schedule-'));
+ document.querySelector('main>.toolbar a').href='https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit#gid='+(week==='core'?'9192026':'0');
  const inventorySheets=['약물리스트','장비리스트'];
  const inventoryMenus=inventorySheets.map(sheet=>menus.find(m=>m.sheet===sheet)).filter(Boolean);
  const inInventory=inventorySheets.includes(selected);
@@ -201,7 +219,7 @@ function render(){
  });
  $('menu').innerHTML=navigation.map(m=>'<button data-sheet="'+esc(m.sheet)+'" '+(m.sheet===selected?'aria-current="page"':'')+'>'+esc(m.name)+'</button>').join('');
  const item=menus.find(m=>m.sheet===selected);$('title').textContent=inInventory&&item?'약물·장비':item?.name||'메뉴 없음';
- $('connection').textContent=selected==='schedule-october'?'10월 일정 · 제공된 PDF 기준':(scheduleState==='ready'?'일정 연결됨':scheduleState==='loading'?'일정 불러오는 중…':'일정 연결 오류 · 새로고침을 눌러 다시 시도해 주세요.')+' · '+({default:'기본 메뉴 표시 중 · 메뉴 시트 미연결',loading:'메뉴 시트 불러오는 중…',ready:'메뉴 시트 연결됨',error:'메뉴 연결 오류 · 마지막으로 불러온 메뉴 표시 중'}[menuState]);
+ $('connection').textContent=(scheduleState==='ready'?'일정 연결됨':scheduleState==='loading'?'일정 불러오는 중…':'일정 연결 오류 · 새로고침을 눌러 다시 시도해 주세요.')+' · '+({default:'기본 메뉴 표시 중 · 메뉴 시트 미연결',loading:'메뉴 시트 불러오는 중…',ready:'메뉴 시트 연결됨',error:'메뉴 연결 오류 · 마지막으로 불러온 메뉴 표시 중'}[menuState]);
  if(!item){$('content').innerHTML='<div class="panel">표시할 메뉴가 없습니다. 메뉴설정 시트에서 표시를 체크해 주세요.</div>';return}
  if(item.type==='overview'){$('content').innerHTML=overviewView();return}
  if(item.type==='schedule'){$('content').innerHTML=monthlyScheduleView();return}
