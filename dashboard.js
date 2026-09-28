@@ -206,7 +206,7 @@ function render(){
  let operationsShown=false;
  let scheduleShown=false;
  const navigation=menus.flatMap(m=>{
-  if(m.type==='schedule'){if(scheduleShown)return [];scheduleShown=true;return [{name:'일정',sheet:selected.startsWith('schedule-')?selected:'schedule-october'}]}
+  if(m.type==='schedule'){if(scheduleShown)return [];scheduleShown=true;return [{name:'일정',sheet:'schedule-october',active:selected.startsWith('schedule-')}]}
   if(['운영시스템','CRM'].includes(m.sheet)){
    if(operationsShown)return [];
    operationsShown=true;
@@ -217,7 +217,7 @@ function render(){
   groupShown=true;
   return [{name:'약물·장비',sheet:inInventory?selected:inventoryMenus[0].sheet}];
  });
- $('menu').innerHTML=navigation.map(m=>'<button data-sheet="'+esc(m.sheet)+'" '+(m.sheet===selected?'aria-current="page"':'')+'>'+esc(m.name)+'</button>').join('');
+ $('menu').innerHTML=navigation.map(m=>'<button data-sheet="'+esc(m.sheet)+'" '+(m.sheet===selected||m.active?'aria-current="page"':'')+'>'+esc(m.name)+'</button>').join('');
  const item=menus.find(m=>m.sheet===selected);$('title').textContent=inInventory&&item?'약물·장비':item?.name||'메뉴 없음';
  $('connection').textContent=(scheduleState==='ready'?'일정 연결됨':scheduleState==='loading'?'일정 불러오는 중…':'일정 연결 오류 · 새로고침을 눌러 다시 시도해 주세요.')+' · '+({default:'기본 메뉴 표시 중 · 메뉴 시트 미연결',loading:'메뉴 시트 불러오는 중…',ready:'메뉴 시트 연결됨',error:'메뉴 연결 오류 · 마지막으로 불러온 메뉴 표시 중'}[menuState]);
  if(!item){$('content').innerHTML='<div class="panel">표시할 메뉴가 없습니다. 메뉴설정 시트에서 표시를 체크해 주세요.</div>';return}
@@ -255,4 +255,5 @@ $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint')
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
+
 
