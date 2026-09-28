@@ -6,14 +6,15 @@ const defaults=expandScheduleMenus([['Overview','overview'],['일정','schedule'
 function expandScheduleMenus(items){
  return items.flatMap(m=>m.sheet==='schedule'?[
   {...m,name:'9월 일정',sheet:'schedule-september',type:'schedule'},
-  {...m,name:'10월 일정',sheet:'schedule-october',type:'schedule'}
+  {...m,name:'10월 일정',sheet:'schedule-october',type:'schedule'},
+  {...m,name:'11월 일정',sheet:'schedule-november',type:'schedule'}
  ]:[m]);
 }
 function pageFromHash(){
  const route=decodeURIComponent(location.hash.slice(1));
- return route==='september'?'schedule-september':route==='october'?'schedule-october':route||'overview';
+ return route==='september'?'schedule-september':route==='october'?'schedule-october':route==='november'?'schedule-november':route==='schedule'?'schedule-october':route||'overview';
 }
-function pageHash(sheet){return sheet==='schedule-september'?'september':sheet==='schedule-october'?'october':sheet}
+function pageHash(sheet){return sheet==='schedule-september'?'september':sheet==='schedule-october'?'october':sheet==='schedule-november'?'november':sheet}
 function septemberRows(){return rows.filter(r=>!/(?:10|11|12)\s*월|(?:10|11|12)\s*[/.]/.test(r.week))}
 function scheduleCards(data){
  const groups=[];
@@ -21,24 +22,36 @@ function scheduleCards(data){
   if(row[0] || !groups.length)groups.push({title:row[0]||'',items:[]});
   groups[groups.length-1].items.push(row);
  }
- return '<div class="schedule-cards">'+groups.map(group=>'<section class="schedule-card"><h3>'+esc(group.title)+'</h3><ul>'+group.items.map(row=>'<li class="schedule-item'+(row[2]?' has-note':'')+'"><span class="schedule-task">'+esc(row[1])+'</span>'+(row[2]?'<span class="schedule-note"><span class="note-label">비고</span><span>'+esc(row[2])+'</span>':'')+'</li>').join('')+'</ul></section>').join('')+'</div>';
+ return '<div class="schedule-cards">'+groups.map(group=>'<section class="schedule-card"><h3>'+scheduleIcon(group.title)+esc(group.title)+'</h3><ul>'+group.items.map(row=>'<li class="schedule-item'+(row[2]?' has-note':'')+'"><span class="schedule-task">'+esc(row[1])+'</span>'+(row[2]?'<span class="schedule-note"><span>'+esc(row[2])+'</span>':'')+'</li>').join('')+'</ul></section>').join('')+'</div>';
+}
+function scheduleIcon(title){
+ const paths=/마케팅/.test(title)?'<path d="M4 9h4l10-5v16L8 15H4zM8 15l2 6M21 9v6"/>':/시스템/.test(title)?'<rect x="4" y="4" width="16" height="12" rx="1"/><path d="M2 20h20M9 16v4m6-4v4"/>':/채용|인사/.test(title)?'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0112 0v3M17 5a3 3 0 010 6m1 3a5 5 0 013 7"/>':/인테리어/.test(title)?'<rect x="3" y="3" width="16" height="6" rx="2"/><path d="M19 6h3v7H12v8"/>':/의료/.test(title)?'<path d="M5 19a5 5 0 010-7l7-7a5 5 0 017 7l-7 7a5 5 0 01-7 0zm3-10l7 7"/>':'<path d="M5 3h11l3 3v15H5zM14 3v5h5M8 12h8m-8 4h8"/>';
+ return '<svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths+'</svg>';
+}
+function scheduleHeading(tabs,notice){
+ const month=selected==='schedule-september'?'9':selected==='schedule-november'?'11':'10';
+ const monthTabs='<div class="month-tabs" aria-label="월별 일정">'+[['9','schedule-september'],['10','schedule-october'],['11','schedule-november']].map(([n,sheet])=>'<button data-sheet="'+sheet+'" aria-pressed="'+(selected===sheet)+'">'+n+'월 일정</button>').join('')+'</div>';
+ return '<div class="schedule-heading"><div class="schedule-title"><h2>'+month+'월 일정</h2>'+monthTabs+'</div><img class="shanghai-skyline" src="shanghai-skyline.svg" alt="" aria-hidden="true"><div class="schedule-controls">'+(notice?'<p class="schedule-notice"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 9a6 6 0 0112 0v6l2 3H4l2-3zM10 21h4"/></svg>'+esc(notice)+'</p>':'<span></span>')+tabs+'</div></div>';
 }
 function monthlyScheduleView(){
+ if(selected==='schedule-november')return scheduleHeading('','')+'<div class="schedule-empty">등록된 11월 일정이 없습니다.</div>';
  if(selected==='schedule-october'){
   const period=octoberSchedule.periods.find(p=>p.id===week);
   const active=period?week:'core';
-  const tabs='<div class="tabs" aria-label="10월 일정 구분">'+[{id:'core',label:'월간 요약'},...octoberSchedule.periods].map(p=>'<button data-week="'+p.id+'" aria-pressed="'+(p.id===active)+'">'+esc(p.label)+'</button>').join('')+'</div>';
-  return '<p class="schedule-notice">'+esc(octoberSchedule.notice)+'</p>'+tabs+'<h2>'+esc(period?'10월 '+period.label:'10월 주요 일정')+'</h2>'+scheduleCards(period?period.rows:octoberSchedule.summary);
+  const tabs='<div class="tabs week-tabs" aria-label="10월 일정 구분">'+[{id:'core',label:'월간 요약'},...octoberSchedule.periods].map(p=>'<button data-week="'+p.id+'" aria-label="'+esc(p.label)+'" aria-pressed="'+(p.id===active)+'">'+esc(p.id==='core'?p.label:p.label.match(/\((.*?)\)/)[1])+'</button>').join('')+'</div>';
+  return scheduleHeading(tabs,octoberSchedule.notice)+scheduleCards(period?period.rows:octoberSchedule.summary);
  }
  const records=septemberRows();
  const weeks=[...new Set(['2주차','3주차','4주차',...records.map(r=>r.week)])];
  if(week!=='core'&&!weeks.includes(week))week='core';
- const tabs='<div class="tabs" aria-label="9월 일정 구분">'+['core',...weeks].map(w=>'<button data-week="'+esc(w)+'" aria-pressed="'+(w===week)+'">'+esc(w==='core'?'9월 핵심 추진 목표':w)+'</button>').join('')+'</div>';
- if(week==='core')return tabs+goalView();
- if(scheduleState!=='ready')return tabs+'<div class="panel">'+(scheduleState==='loading'?'일정을 불러오는 중입니다.':'일정을 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.')+'</div>';
+ const tabs='<div class="tabs week-tabs" aria-label="9월 일정 구분">'+['core',...weeks].map(w=>'<button data-week="'+esc(w)+'" aria-pressed="'+(w===week)+'">'+esc(w==='core'?'9월 핵심 추진 목표':w)+'</button>').join('')+'</div>';
+ const heading=scheduleHeading(tabs,'');
+ if(week==='core')return heading+goalView();
+ if(scheduleState!=='ready')return heading+'<div class="panel">'+(scheduleState==='loading'?'일정을 불러오는 중입니다.':'일정을 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.')+'</div>';
  const list=records.filter(r=>r.week===week);
- return tabs+'<h2>'+esc(week)+' · '+list.length+'개 분야</h2>'+(list.length?scheduleCards(list.map(r=>[r.field,r.schedule,r.note])):'<div class="panel">일정이 없습니다.</div>');
+ return heading+(list.length?scheduleCards(list.map(r=>[r.field,r.schedule,r.note])):'<div class="panel">일정이 없습니다.</div>');
 }
+
 const goals=[['① 법인·인허가','법인 설립 및 계좌 개설, 1호점 인허가 절차 진행','9/20 중국 법인 설립 예정'],['② 인테리어 착공','설계안 확정 → 공사 착공 및 진행','도면 수정 중'],['③ 정식 파트별 채용','파트별 채용 진행 → 주요 포지션 확정','채용공고 내용 전달 요청 완'],['④ 장비·약품 및 CRM','업체·품목 확정 → 계약·발주','양측 팀 진행 중'],['⑤ 마케팅 채널','메이퇀·SNS·위챗 등 주요 채널 개설 및 입점 준비','법인 설립 후 즉시 진행 준비'],['⑥ SOP·법무문서','운영 SOP 및 근로계약서·동의서·내부 규정 구축 완료','계약서 초안 완, 기타 작성중']];
 let menus=defaults, tables={}, rows=[], selected=pageFromHash(), week='core', scheduleState='loading', menuState='default', generation=0;
 const $=id=>document.getElementById(id);
@@ -165,6 +178,7 @@ function projectView(data,item){
  return '<div class="section-heading"><div><p class="eyebrow">중국사업 · 1호점 징안점</p><h2>'+esc(item.name)+'</h2></div><a class="sheet-button" href="https://docs.google.com/spreadsheets/d/1U-v9bd3a6cVDivs9BeKtMMraLUqKon00hW31vqNf9YA/edit" target="_blank" rel="noopener">시트에서 수정 ↗</a></div><section class="panel stage-panel"><h2>전체 진행단계</h2>'+stageHTML+'</section><div class="project-mini-grid">'+info('현재 단계',current,'현재 위치 미설정')+info('다음 단계 진입 조건',next,'다음 단계 미설정')+info('예정 일정',current,'일정 미설정')+'</div><div class="project-bottom"><section><h2>세부 실행 항목</h2>'+taskTable+'</section><section class="panel issue-panel"><h2>막힘·의사결정 필요</h2>'+issueHTML+'</section></div>';
 }
 function render(){
+ document.querySelector('main').classList.toggle('schedule-page',selected.startsWith('schedule-'));
  const inventorySheets=['약물리스트','장비리스트'];
  const inventoryMenus=inventorySheets.map(sheet=>menus.find(m=>m.sheet===sheet)).filter(Boolean);
  const inInventory=inventorySheets.includes(selected);
@@ -172,7 +186,9 @@ function render(){
  const operationMenus=menus.filter(m=>['운영시스템','CRM'].includes(m.sheet));
  const inOperations=['운영시스템','CRM'].includes(selected);
  let operationsShown=false;
+ let scheduleShown=false;
  const navigation=menus.flatMap(m=>{
+  if(m.type==='schedule'){if(scheduleShown)return [];scheduleShown=true;return [{name:'일정',sheet:selected.startsWith('schedule-')?selected:'schedule-october'}]}
   if(['운영시스템','CRM'].includes(m.sheet)){
    if(operationsShown)return [];
    operationsShown=true;
