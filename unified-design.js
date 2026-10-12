@@ -22,6 +22,14 @@
   const more=header.querySelector('.mk-more-panel');
   const settings=document.createElement('button');settings.dataset.openSettings='';settings.textContent='메뉴 시트 연결';more.append(settings);
   const status=document.createElement('p');status.className='header-status';status.textContent=document.getElementById('connection').textContent;more.append(status);
+  const loading=scheduleState==='loading'||menuState==='loading';
+  const failed=scheduleState==='error'||menuState==='error';
+  if(loading||failed){
+   const notice=document.createElement('p');notice.className='connection-notice';notice.setAttribute('role','status');
+   notice.textContent=loading?'구글 시트 데이터를 불러오는 중입니다. 서버 응답이 느리면 최대 2분 정도 걸릴 수 있습니다.':document.getElementById('connection').textContent;
+   notice.style.cssText='margin:0 0 20px;padding:12px 16px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--muted);font-size:14px';
+   header.after(notice);
+  }
  }
  render=function(){baseRender();apply()};
  document.addEventListener('click',e=>{if(!e.target.closest('[data-open-settings]'))return;const main=document.querySelector('main');main.classList.add('show-connection-settings');const settings=main.querySelector(':scope > details');settings.open=true;main.querySelector('.mk-more').open=false;settings.scrollIntoView({behavior:'smooth',block:'center'});settings.querySelector('summary').focus()});
