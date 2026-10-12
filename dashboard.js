@@ -243,7 +243,9 @@ function render(){
  if(item.sheet==='담당자별업무'){$('content').innerHTML=taskView(data);return}
  $('content').innerHTML=data?.rows?.length?table(data.headers,data.rows):'<div class="panel"><h2>아직 등록된 내용이 없습니다.</h2><p>'+(menuState==='ready'?'연결된 시트에 업무를 추가한 뒤 새로고침해 주세요.':'메뉴 시트 연결 후 이 분야의 업무를 표시합니다.')+'</p></div>';
 }
-async function json(url){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);try{const response=await fetch(url+'?cacheBust='+Date.now(),{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('연결 실패');return await response.json()}finally{clearTimeout(timer)}}
+// Apps Script can take over a minute to start and read the workbook.
+// Keep a finite timeout, but allow the measured 78-second response to complete.
+async function json(url){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),120000);try{const response=await fetch(url+'?cacheBust='+Date.now(),{cache:'no-store',signal:controller.signal});if(!response.ok)throw Error('연결 실패');return await response.json()}finally{clearTimeout(timer)}}
 async function refresh(){const run=++generation;scheduleState='loading';menuState=endpoint?'loading':'default';render();await Promise.allSettled([
  (async()=>{try{const data=await json(SCHEDULE_URL);if(!Array.isArray(data))throw Error('일정 형식 오류');if(run!==generation)return;rows=data.map(r=>({week:String(r.week||'').trim(),field:String(r.field||'').trim(),schedule:String(r.schedule||''),note:String(r.note||'')})).filter(r=>r.week&&r.field&&r.week!=='주차');scheduleState='ready'}catch{if(run===generation)scheduleState='error'}finally{if(run===generation)render()}})(),
  (async()=>{if(!endpoint)return;try{if(!validURL(endpoint))throw Error('잘못된 주소');const data=await json(endpoint);if(data.error)throw Error(data.error);const next=expandScheduleMenus(normalizeMenus(data.menus));if(!data.tables||typeof data.tables!=='object'||Array.isArray(data.tables))throw Error('데이터 형식 오류');for(const t of Object.values(data.tables)){if(!t.error&&(!Array.isArray(t.headers)||!Array.isArray(t.rows)||!t.rows.every(Array.isArray)))throw Error('표 형식 오류')}if(run!==generation)return;menus=next;tables=data.tables;overviewData=data.overview||null;menuState='ready';if(!menus.some(m=>m.sheet===selected))selected=menus[0]?.sheet||''}catch{if(run===generation)menuState='error'}finally{if(run===generation)render()}})()
@@ -256,5 +258,3 @@ $('refresh').onclick=refresh;$('print').onclick=()=>window.print();$('endpoint')
 $('connect').onclick=()=>{const value=$('endpoint').value.trim();if(!validURL(value)){$('settings-message').textContent='Google Apps Script의 /exec로 끝나는 연결 주소를 입력해 주세요.';return}try{localStorage.setItem('velyb-menu-url',value);$('settings-message').textContent='이 브라우저에 연결 주소를 저장했습니다.'}catch{$('settings-message').textContent='주소를 저장할 수 없어 이번 화면에서만 연결합니다.'}endpoint=value;refresh()};
 $('disconnect').onclick=()=>{try{localStorage.removeItem('velyb-menu-url')}catch{}endpoint='';$('endpoint').value='';menus=defaults;tables={};overviewData=null;selected='overview';$('settings-message').textContent='기본 메뉴로 전환했습니다.';refresh()};
 refresh();
-
-
