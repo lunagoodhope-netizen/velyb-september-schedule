@@ -24,12 +24,18 @@
  function sheetLink(name,row){return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit${GIDS[name]===undefined?'':'#gid='+GIDS[name]+(row?'&range=A'+row:'')}`}
  function records(name){const table=state.data?.tables?.[name];if(!table||table.error||!Array.isArray(table.headers)||!Array.isArray(table.rows))return [];return table.rows.filter(Array.isArray).map((r,i)=>Object.assign({_row:i+2},Object.fromEntries(table.headers.map((h,j)=>[text(h),r[j]??'']))));}
  function ordered(rows){return rows.map((r,i)=>({...r,_order:i})).sort((a,b)=>{const n=v=>text(v)!==''&&Number.isFinite(Number(v))?Number(v):99999;return n(a['표시 순서'])-n(b['표시 순서'])||a._order-b._order})}
- function categories(){return [...new Set(ordered(records('카테고리설정')).map(r=>text(r['카테고리'])).filter(Boolean))]}
+ function categories(){const table=state.data?.tables?.['카테고리설정'];if(!table||table.error)return [...new Set(records('업무관리').map(r=>text(r['카테고리'])).filter(Boolean))];return [...new Set(ordered(records('카테고리설정')).map(r=>text(r['카테고리'])).filter(Boolean))]}
  function tasks(){const cats=categories();return records('업무관리').filter(r=>text(r['업무'])).map(r=>({...r,_category:cats.includes(text(r['카테고리']))?text(r['카테고리']):'미분류'}))}
  function visibleTasks(rows=tasks()){return rows.filter(r=>(!state.category||r._category===state.category)&&(!state.status||text(r['상태'])===state.status)&&(!state.query||['카테고리','업무','다음 할 일','비고'].some(k=>text(r[k]).toLocaleLowerCase().includes(state.query.toLocaleLowerCase()))))}
  function coreTasks(){return tasks().filter(r=>yes(r['핵심업무 표시'])&&monthKey(r['핵심업무 월'])===state.month)}
  function info(){return Object.fromEntries(records('사업기본정보').filter(r=>text(r['항목'])).map(r=>[text(r['항목']),text(r['내용'])]))}
- function monthEvents(){return records('주요일정').filter(r=>text(r['일정'])&&isoDate(r['날짜']).slice(0,7)===state.month).sort((a,b)=>isoDate(a['날짜']).localeCompare(isoDate(b['날짜']))||text(a['시간']).localeCompare(text(b['시간'])))}
+ function eventMonth(row){
+  const date=isoDate(row['날짜']);if(date)return date.slice(0,7);
+  const raw=text(row['월'])||text(row['날짜']),key=monthKey(raw);if(key)return key;
+  const m=/^(?:(\d{4})\s*년\s*)?(\d{1,2})\s*월$/.exec(raw);
+  return m&&+m[2]>=1&&+m[2]<=12?(m[1]||state.month.slice(0,4))+'-'+m[2].padStart(2,'0'):'';
+ }
+ function monthEvents(){return records('주요일정').filter(r=>text(r['일정'])&&eventMonth(r)===state.month).sort((a,b)=>(isoDate(a['날짜'])||'9999').localeCompare(isoDate(b['날짜'])||'9999')||text(a['시간']).localeCompare(text(b['시간'])));}
  function weekGroups(){
   const name=Number(state.month.slice(5))+'월', rows=records(name).filter(r=>text(r['일정']));const groups=[];
   for(const r of rows){const start=isoDate(r['시작일']),end=isoDate(r['종료일']);if(start&&start.slice(0,7)!==state.month&&(!end||end.slice(0,7)!==state.month))continue;
@@ -57,7 +63,7 @@
   return `<section class="panel business-card"><div class="tab-pair" role="tablist" aria-label="사업 자료"><button role="tab" id="info-tab" aria-controls="business-content" data-business="info" aria-selected="${state.businessTab==='info'}">사업 기본정보</button><button role="tab" id="links-tab" aria-controls="business-content" data-business="links" aria-selected="${state.businessTab==='links'}">바로가기</button></div><div id="business-content" role="tabpanel" aria-labelledby="${state.businessTab==='info'?'info-tab':'links-tab'}">${state.businessTab==='info'?`<dl class="basic">${rows.map(r=>`<div><dt>${escape(r['항목'])}</dt><dd>${text(r['내용'])?escape(r['내용']):'<span class="placeholder">입력 전</span>'}</dd></div>`).join('')}</dl>`:`<div class="quick-links">${links.map(r=>`<a href="${escape(safeUrl(r['링크']))}" target="_blank" rel="noopener noreferrer"><span>${escape(r['이름'])}</span><span>↗</span></a>`).join('')}</div>${links.length?'':empty('등록된 바로가기가 없습니다.')}`}</div><div class="card-foot">${edit(state.businessTab==='info'?'사업기본정보':'바로가기','편집')}</div></section>`;
  }
  function ddayCard(){const fields=info(),isOpen=!!isoDate(fields['오픈목표일']),target=isOpen?fields['오픈목표일']:fields['준비완료일'];return `<section class="panel dday-card"><a class="edit-dot" href="${sheetLink('사업기본정보')}" target="_blank" rel="noopener noreferrer" aria-label="오픈 목표일 수정">✎</a><h2>OPEN D-DAY</h2><div class="dday-number">${dday(target)}</div><p>${target?escape(isoDate(target)):'목표일을 입력해 주세요'}</p><p>${target?(isOpen?'오픈 목표일':'준비완료일 기준'):'사업 기본정보에서 설정'}</p></section>`}
- function eventList(events){return events.length?`<div class="events">${events.map(r=>{const date=isoDate(r['날짜']);return `<article class="event"><div class="event-date">${dateShort(date)}<small>${date?'('+weekday(date)+')':''}</small></div><div><h3>${escape(r['일정'])}</h3>${r['시간']?`<p>${escape(r['시간'])}</p>`:''}${r['장소']?`<p>⌖ ${escape(r['장소'])}</p>`:''}${r['비고']?`<p>${escape(r['비고'])}</p>`:''}</div></article>`}).join('')}</div>`:empty('이번 달 등록된 주요 일정이 없습니다.')}
+ function eventList(events){return events.length?`<div class="events">${events.map(r=>{const date=isoDate(r['날짜']),month=eventMonth(r);return `<article class="event"><div class="event-date">${date?dateShort(date):month?Number(month.slice(5))+'월':'월 미정'}<small>${date?'('+weekday(date)+')':'날짜 미정'}</small></div><div><h3>${escape(r['일정'])}</h3>${r['시간']?`<p>${escape(r['시간'])}</p>`:''}${r['장소']?`<p>⌖ ${escape(r['장소'])}</p>`:''}${r['비고']?`<p>${escape(r['비고'])}</p>`:''}</div></article>`}).join('')}</div>`:empty('이번 달 등록된 주요 일정이 없습니다.')}
  function overview(){
   const core=coreTasks(),all=tasks(),cats=categories(),events=monthEvents(),information=records('중요정보').filter(r=>text(r['제목'])||text(r['내용']));
   return `<div class="page-heading"><div><p class="eyebrow">CHINA BUSINESS</p><h1>Overview</h1></div><a class="text-link" href="#schedule">월별 주차 일정 보기 →</a></div><div class="overview-top">${businessCard()}${miniCalendar()}${ddayCard()}</div><div class="overview-main"><section class="panel"><div class="panel-head"><h2>이번 달 핵심업무</h2>${edit('업무관리','업무 수정')}</div>${core.length?`<div class="table-scroll"><table><colgroup><col style="width:48%"><col style="width:25%"><col style="width:27%"></colgroup><thead><tr><th>업무</th><th>분야</th><th>상태</th></tr></thead><tbody>${core.slice(0,6).map(r=>`<tr><td><strong>${escape(r['업무'])}</strong></td><td>${categoryChip(r._category)}</td><td>${statusChip(r['상태'])}</td></tr>`).join('')}</tbody></table></div>`:empty('이달의 핵심업무를 시트에서 선택해 주세요.')}<div class="card-foot"><a class="text-link" href="#tasks">전체 업무 보기 →</a></div></section><section class="panel"><div class="panel-head"><h2>주요 일정</h2>${edit('주요일정','일정 수정')}</div>${eventList(events.slice(0,4))}</section></div><div class="overview-bottom"><section class="panel"><div class="panel-head"><h2>분야별 요약</h2>${edit('카테고리설정','카테고리 설정')}</div><div class="fields">${cats.map(c=>{const rows=all.filter(r=>r._category===c),focus=rows.find(r=>text(r['상태'])==='확인 필요')||rows.find(r=>text(r['상태'])!=='완료')||rows[0];return `<button class="field-row" data-category-route="${escape(c)}"><strong>${escape(c)}</strong><span>${focus?escape(text(focus['다음 할 일'])||text(focus['업무'])):'등록된 업무 없음'}</span><b>›</b></button>`}).join('')}</div>${cats.length?'':empty('카테고리를 추가해 주세요.')}</section><section class="panel"><div class="panel-head"><h2>중요 정보</h2>${edit('중요정보','정보 수정')}</div>${information.length?information.map(r=>`<article class="info-item"><h3>${escape(r['제목'])}</h3><p>${escape(r['내용'])}</p>${safeUrl(r['관련 자료'])?resource(r['관련 자료']):''}</article>`).join(''):empty('공유할 중요 정보를 이곳에 모아두세요.')}</section></div>`;
@@ -87,7 +93,7 @@
   state.loading=true;document.getElementById('refresh').disabled=true;document.getElementById('sync').textContent='불러오는 중…';
   pending=(async()=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);try{
    const res=await fetch(ENDPOINT+'?cacheBust='+Date.now(),{cache:'no-store',signal:controller.signal});if(!res.ok)throw Error('응답 오류');const data=await res.json();
-   const required=['업무관리','카테고리설정','사업기본정보','바로가기','월별목표','중요정보','주요일정'];
+   const required=['업무관리','사업기본정보','바로가기','월별목표','주요일정'];
    if(required.some(n=>!Array.isArray(data.tables?.[n]?.headers)||!Array.isArray(data.tables?.[n]?.rows)||data.tables[n].error))throw Error('시트 연결 확인 필요');
    state.data=data;state.error='';state.updated=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
    document.getElementById('sync').textContent='✓ '+state.updated+' 동기화';document.getElementById('notice').innerHTML='';render();
@@ -112,6 +118,6 @@
   document.addEventListener('keydown',e=>{if(e.target.getAttribute('role')==='tab'&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();state.businessTab=state.businessTab==='info'?'links':'info';render();document.getElementById(state.businessTab==='info'?'info-tab':'links-tab')?.focus()}});
   render();refresh();setInterval(()=>{if(!document.hidden)refresh()},300000);
  }
- if(typeof module!=='undefined'&&module.exports)module.exports={state,isoDate,monthKey,safeUrl,records,categories,tasks,visibleTasks,coreTasks,weekGroups,dday,overview,tasksPage,schedulePage};
+ if(typeof module!=='undefined'&&module.exports)module.exports={state,isoDate,monthKey,safeUrl,records,categories,tasks,visibleTasks,coreTasks,eventMonth,monthEvents,eventList,weekGroups,dday,overview,tasksPage,schedulePage};
  else setup();
 })();
